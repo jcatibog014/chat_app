@@ -1,0 +1,10 @@
+Flask>=3.1,<4
+flask-sock>=0.7,<1  # the /ws endpoint: plain WebSockets on Flask (it brings simple-websocket)
+SQLAlchemy>=2.0,<2.1  # the ORM: models.py is the data model in Python classes
+alembic>=1.13,<2  # database migrations (flask --app paperplane upgrade-db)
+psycopg[binary]>=3.2,<4  # talks to PostgreSQL (Neon) on the live site; SQLite needs nothing extra
+tzdata>=2025.1  # time zone data (Windows doesn't have it built in)
+gunicorn>=23  # the web server on Render (Linux only; locally use "flask run")
+Pillow>=11  # pictures: re-saved as WebP without their hidden details (EXIF), and thumbnails
+pywebpush>=2,<3  # phone notifications (web push with VAPID keys); it brings py-vapid
+pytest>=8

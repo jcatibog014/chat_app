@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}{{ code }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="narrow top-gap-big">
+    {% call empty({404: 'Not Found', 403: 'Not Allowed', 429: 'Slow Down', 409: 'Not Right Now', 413: 'Too Big'}.get(code, 'Something Went Wrong'), message) %}
+      <a class="button" href="{{ url_for('auth.index') }}">{{ 'Back to your chats' if g.user else 'Go to the start' }}</a>
+    {% endcall %}
+  </div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_icons.html" import logo %}
+{# The pages before you log in: the logo and name in the middle of a soft sky, the card under them. #}
+{% block body_class %}welcome-body{% endblock %}
+{% block layout %}
+  <div class="welcome sky-page" id="main">
+    <div class="welcome-clouds" aria-hidden="true"></div>
+    <div class="welcome-center">
+      <a class="welcome-brand" href="{{ url_for('auth.login') }}">
+        {{ logo(84, 'welcome-logo') }}
+        <span class="welcome-name">{{ APP_NAME }}</span>
+      </a>
+      <p class="welcome-line">{{ TAGLINE }}</p>
+      {% block card %}{% endblock %}
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, empty %}
+{% block title %}Chats - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Chats') }}
+  {{ empty('No Chats Yet', 'Your direct messages and group chats will show here.') }}
+{% endblock %}

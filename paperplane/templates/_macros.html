@@ -1,0 +1,61 @@
+{# Small building blocks used by many pages. #}
+
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro field(name, label, value='', error=None, type='text', hint=None, attrs='', note=None, aside=None) %}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label"><span>{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>{% if aside %}{{ aside|safe }}{% endif %}</span>
+    <input type="{{ type }}" name="{{ name }}" value="{{ value if value is not none else '' }}" {{ attrs|safe }}
+           {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+    {% if note %}<span class="field-note">{{ note }}</span>{% endif %}
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{% macro select(name, label, choices, value=None, error=None, hint=None, attrs='') %}
+  {# choices: a list of (value, text) pairs #}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label"><span>{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span></span>
+    <select name="{{ name }}" {{ attrs|safe }}{% if error %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+      {% for choice, text in choices %}
+        <option value="{{ choice }}"{% if choice|string == value|string %} selected{% endif %}>{{ text }}</option>
+      {% endfor %}
+    </select>
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{# A page title, bare (no line of text under it: the owner's rule), with a soft dashed trail under it. #}
+{% macro page_head(title, back=None, back_label=None) %}
+  {% if back %}<a class="back-link" href="{{ back }}">&larr; {{ back_label or 'Back' }}</a>{% endif %}
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    {% if caller %}<div class="head-actions">{{ caller() }}</div>{% endif %}
+  </div>
+  <div class="title-trail" aria-hidden="true"></div>
+{% endmacro %}
+
+{# An empty page: a little paper plane resting. #}
+{% macro empty(title, text=None) %}
+  <div class="empty">
+    <svg class="empty-plane" viewBox="0 0 120 64" aria-hidden="true">
+      <path class="trail" d="M6 52 C 26 50, 34 34, 52 38 S 74 50, 80 40"></path>
+      <path class="plane-top" d="M74 30 L114 12 L92 46 L88 36 Z"></path>
+      <path class="plane-fold" d="M88 36 L114 12 L92 46 Z"></path>
+    </svg>
+    <h2>{{ title }}</h2>
+    {% if text %}<p>{{ text }}</p>{% endif %}
+    {% if caller %}{{ caller() }}{% endif %}
+  </div>
+{% endmacro %}
+
+{# A person's round avatar: their first letter on their own colour. size: '' / 'small' / 'big'.
+   presence (stage 4): online / away / None, drawn as a dot at the corner. #}
+{% macro avatar(user, size='', presence=None) %}
+  <span class="avatar tone-{{ user.tone }}{% if size %} avatar-{{ size }}{% endif %}" aria-hidden="true" data-avatar="{{ user.id }}">{{ user.initial }}{% if presence is not none %}<span class="dot dot-{{ presence or 'offline' }}" data-presence-dot="{{ user.id }}"></span>{% endif %}</span>
+{% endmacro %}
+
+{# An on/off switch: a real button that submits its form (works without JavaScript). #}
+{% macro switch(name, on, label) %}
+  <button class="switch" type="submit" name="{{ name }}" value="{{ '0' if on else '1' }}" role="switch" aria-checked="{{ 'true' if on else 'false' }}" aria-label="{{ label }}"></button>
+{% endmacro %}

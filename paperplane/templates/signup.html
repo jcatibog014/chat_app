@@ -1,0 +1,18 @@
+{% extends "_welcome.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Create an Account - {{ APP_NAME }}{% endblock %}
+{% block card %}
+  <div class="card welcome-card">
+    <h1>Create an Account</h1>
+    <form method="post" action="{{ url_for('auth.signup') }}" class="stack">
+      {{ csrf() }}
+      {{ field('name', 'Your name', form.name, errors.name, note='People see this in chats.', attrs='autocomplete="name" maxlength="80" required autofocus') }}
+      {{ field('username', 'Username', form.username, errors.username, note='People find you by it: @username.',
+               attrs='autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" required') }}
+      {{ field('password', 'Password', type='password', error=errors.password, hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+      {{ field('confirm_password', 'Password again', type='password', attrs='autocomplete="new-password" required') }}
+      <button class="button button-block button-big" type="submit">Create account</button>
+    </form>
+    <p class="welcome-switch">Have an account? <a href="{{ url_for('auth.login') }}">Log in.</a></p>
+  </div>
+{% endblock %}

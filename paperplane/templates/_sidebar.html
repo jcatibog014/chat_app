@@ -1,0 +1,54 @@
+{% from "_icons.html" import logo, icon %}
+{% from "_macros.html" import avatar, csrf %}
+{% set page = request.endpoint or '' %}
+{% set section = page.split('.')[0] %}
+{# One menu entry. It shows only once its part of the app exists. #}
+{% macro link(endpoint, label, icon_name, here) %}
+  {% if has_page(endpoint) %}
+  <li><a href="{{ url_for(endpoint) }}"{% if here %} aria-current="page"{% endif %}>{{ icon(icon_name, 20) }} <span class="side-label">{{ label }}</span>{% if caller %}{{ caller() }}{% endif %}</a></li>
+  {% endif %}
+{% endmacro %}
+{# The sky: a blue sidebar with soft clouds drawn in CSS (a night sky with stars in dark mode). #}
+<aside class="sidebar sky">
+ <div class="sidebar-inner">
+  <div class="sidebar-top">
+    <a class="logo" href="{{ url_for('chats.index') }}">{{ logo(34, 'side-logo') }} <span>{{ APP_NAME }}</span></a>
+    {% if g.user.is_demo %}
+    <details class="demo-tag" data-popover>
+      <summary title="About the demo">Demo</summary>
+      <div class="demo-note">A sample team, just for you. Your teammates are made up, and everything is deleted 24 hours after you started.</div>
+    </details>
+    {% endif %}
+    <button class="menu-button" type="button" data-menu-button aria-expanded="false" aria-controls="side-nav" aria-label="Menu" hidden>
+      {{ icon('menu', 22) }}
+    </button>
+  </div>
+  <div class="sidebar-menu" id="side-nav">
+    <nav aria-label="Main">
+      <ul class="side-links">
+        {% call link('chats.index', 'Chats', 'chats', section == 'chats' and page != 'chats.new') %}<span class="count" data-total-unread{% if not total_unread|default(0) %} hidden{% endif %}>{{ total_unread|default(0) }}</span>{% endcall %}
+        {{ link('chats.new', 'New Chat', 'new-chat', page == 'chats.new') }}
+        {{ link('search.page', 'Search', 'search', section == 'search') }}
+        {{ link('settings.page', 'Settings', 'settings', section == 'settings') }}
+      </ul>
+    </nav>
+    <div class="sidebar-foot">
+      {# <details> opens and closes without JavaScript. app.js also closes it on an outside click. #}
+      <details class="user-menu" data-popover>
+        <summary>
+          {{ avatar(g.user) }}
+          <span class="user-menu-name"><span><span class="visually-hidden">Account menu for </span>{{ g.user.name }}</span>
+            <small>@{{ g.user.handle }}</small></span>
+        </summary>
+        <div class="user-menu-items">
+          <a href="{{ url_for('settings.page') }}">Settings</a>
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            {{ csrf() }}
+            <button type="submit">{{ 'Leave the demo' if g.user.is_demo else 'Log out' }}</button>
+          </form>
+        </div>
+      </details>
+    </div>
+  </div>
+ </div>
+</aside>

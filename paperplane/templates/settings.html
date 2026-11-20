@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, csrf, field %}
+{% block title %}Settings - {{ APP_NAME }}{% endblock %}
+{% macro posted(name, default) %}{{ form.get(name, default) if form else default }}{% endmacro %}
+{% block content %}
+  {{ page_head('Settings') }}
+  <div class="settings">
+
+    <section class="card" id="account">
+      <h2>Your Account</h2>
+      {% if g.user.is_demo %}
+        <p class="muted">You are {{ g.user.name }} (@{{ g.user.handle }}), in a demo. The demo's account can't be changed, and it is deleted 24 hours after it started.</p>
+      {% else %}
+        <p class="muted">You log in as @{{ g.user.handle }}.</p>
+        <form method="post" class="form-row" data-watch-changes>
+          {{ csrf() }}
+          <input type="hidden" name="action" value="name">
+          {{ field('user_name', 'Your name', posted('user_name', g.user.name), errors.user_name, attrs='required maxlength="80" autocomplete="name"') }}
+          <button class="button" type="submit">Save name</button>
+        </form>
+        <div class="setting-row">
+          <div>
+            <h3>Password</h3>
+            <p class="muted small">Changing it logs out your other devices.</p>
+          </div>
+          <details class="fold"{% if errors.current_password or errors.new_password %} open{% endif %}>
+            <summary class="button button-quiet">Change password</summary>
+            <form method="post" class="stack fold-body">
+              {{ csrf() }}
+              <input type="hidden" name="action" value="password">
+              {{ field('current_password', 'Current password', type='password', error=errors.current_password, attrs='required autocomplete="current-password"') }}
+              {{ field('new_password', 'New password', type='password', error=errors.new_password, hint='At least 8 characters', attrs='required autocomplete="new-password"') }}
+              {{ field('confirm_password', 'New password again', type='password', attrs='required autocomplete="new-password"') }}
+              <div class="form-actions start"><button class="button" type="submit">Change password</button></div>
+            </form>
+          </details>
+        </div>
+        <div class="setting-row">
+          <div>
+            <h3>Recovery Code</h3>
+            <p class="muted small">Lost your code? Make a new one. The old one stops working.</p>
+          </div>
+          <details class="fold"{% if errors.recovery_password %} open{% endif %}>
+            <summary class="button button-quiet">New recovery code</summary>
+            <form method="post" class="stack fold-body">
+              {{ csrf() }}
+              <input type="hidden" name="action" value="recovery">
+              {{ field('recovery_password', 'Your password', type='password', error=errors.recovery_password, attrs='required autocomplete="current-password"') }}
+              <div class="form-actions start"><button class="button" type="submit">Make a new code</button></div>
+            </form>
+          </details>
+        </div>
+      {% endif %}
+    </section>
+
+    {% for template_name in settings_sections|default([]) %}{% include template_name %}{% endfor %}
+
+    <section class="card" id="time">
+      <h2>Time Zone</h2>
+      <p class="muted">Every time in your chats is shown in it.</p>
+      <form method="post" class="form-row" data-watch-changes>
+        {{ csrf() }}
+        <input type="hidden" name="action" value="time_zone">
+        <input type="hidden" name="anchor" value="time">
+        <label class="field{% if errors.time_zone %} has-error{% endif %}">
+          <span class="field-label"><span>Time zone</span></span>
+          <select name="time_zone">
+            {% set chosen = posted('time_zone', g.user.time_zone)|trim %}
+            {% for name in zones %}<option value="{{ name }}"{% if name == chosen %} selected{% endif %}>{{ name.replace('_', ' ') }}</option>{% endfor %}
+          </select>
+          {% if errors.time_zone %}<p class="field-error">{{ errors.time_zone }}</p>{% endif %}
+        </label>
+        <button class="button" type="submit">Save time zone</button>
+      </form>
+    </section>
+
+    <section class="card" id="appearance" data-theme-settings>
+      <h2>Appearance</h2>
+      <p class="muted">Saved on this device.</p>
+      <fieldset class="choices js-only">
+        <legend class="visually-hidden">Theme</legend>
+        <label class="check"><input type="radio" name="theme" value="system"> Same as this device</label>
+        <label class="check"><input type="radio" name="theme" value="light"> <span>Light mode <span class="hint">(blue sky)</span></span></label>
+        <label class="check"><input type="radio" name="theme" value="dark"> <span>Dark mode <span class="hint">(night sky)</span></span></label>
+      </fieldset>
+      <p class="muted no-js-only">The theme follows your device's setting. Turn on JavaScript to choose one here.</p>
+    </section>
+
+    <section class="card" id="devices">
+      <h2>Devices</h2>
+      {% if has_page('service_worker') %}
+      <div class="setting-row first">
+        <div>
+          <h3>Install the App</h3>
+          <p class="muted small">Paper Plane can sit on your phone's home screen like an app. On an iPhone: Share, then Add to Home Screen.</p>
+        </div>
+        <button class="button button-quiet" type="button" data-install hidden>Install app</button>
+      </div>
+      {% endif %}
+      <div class="setting-row{% if not has_page('service_worker') %} first{% endif %}">
+        <div>
+          <h3>Log Out Other Devices</h3>
+          <p class="muted small">Every other phone, computer and open tab is logged out at once. This one stays.</p>
+        </div>
+        <form method="post" data-confirm="Log out every other device and tab?">
+          {{ csrf() }}
+          <input type="hidden" name="action" value="logout_others">
+          <button class="button button-quiet" type="submit">Log out others</button>
+        </form>
+      </div>
+      <div class="setting-row">
+        <div>
+          <h3>{{ 'Leave the Demo' if g.user.is_demo else 'Log Out' }}</h3>
+          <p class="muted small">{{ 'You can start a new demo from the login page.' if g.user.is_demo else 'Log out on this device.' }}</p>
+        </div>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          {{ csrf() }}
+          <button class="button button-quiet" type="submit">{{ 'Leave the demo' if g.user.is_demo else 'Log out' }}</button>
+        </form>
+      </div>
+    </section>
+  </div>
+{% endblock %}
