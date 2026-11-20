@@ -1,0 +1,16 @@
+{% from "_macros.html" import csrf, switch %}
+<section class="card" id="privacy">
+  <h2>Privacy</h2>
+  <div class="setting-row first">
+    <div>
+      <h3>Show When I'm Online</h3>
+      <p class="muted small">People you chat with see a green dot when you're here, and when you were last seen. Turned off, you look offline to everyone.</p>
+    </div>
+    <form method="post" class="switch-form">
+      {{ csrf() }}
+      <input type="hidden" name="action" value="show_presence">
+      <input type="hidden" name="anchor" value="privacy">
+      {{ switch('show_presence', g.user.show_presence, "Show when I'm online") }}
+    </form>
+  </div>
+</section>

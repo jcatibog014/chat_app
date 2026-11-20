@@ -23,7 +23,7 @@
                 {{ csrf() }}
                 <input type="hidden" name="person" value="{{ person.id }}">
                 <button type="submit" class="person-button">
-                  {{ avatar(person) }}
+                  {{ avatar(person, presence=presence_of(person)) }}
                   <span><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></span>
                   {{ icon('arrow', 18) }}
                 </button>

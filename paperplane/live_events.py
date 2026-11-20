@@ -5,7 +5,7 @@ the same domain functions as the pages (chats.py), which check the rules.
     read          {conversation_id, seq}               -> ack {}
     sync          {open: {conversation_id, version}}   -> ack {list_html, total_unread, changes, version, reload}
 """
-from . import access, chats
+from . import access, chats, outbox, presence
 from .chats import BODY_MAX_LENGTH, render_fragment
 from .events import on
 
@@ -23,6 +23,27 @@ def send(ctx, data):
 @on("read", limit=(60, 10), conversation_id=(int, True), seq=(int, True))
 def read(ctx, data):
     chats.mark_read(ctx.s, ctx.user, data["conversation_id"], data["seq"])
+    return {}
+
+
+@on("presence", limit=(30, 10), visible=(bool, True))
+def visibility(ctx, data):
+    """The tab was hidden or shown (Away after 5 minutes hidden, presence.py)."""
+    presence.get(ctx.app).set_visible(ctx.connection, data["visible"])
+    return {}
+
+
+@on("typing", limit=(30, 10), conversation_id=(int, True))
+def typing(ctx, data):
+    """Someone is typing: tell the chat's other members. Never stored, never sent back to
+    the typer, and only from someone who may send there (a muted member types to nobody).
+    The browser sends it at most every 3 s; the server drops anything faster than 2 s."""
+    conversation, membership = access.load(ctx.s, ctx.user, data["conversation_id"])
+    chats.require_speaking("send", ctx.s, conversation, membership, ctx.user, ctx.now)
+    if ctx.hub.allow(f"typing:{ctx.user.id}:{conversation.id}", 1, 2):
+        others = chats.member_ids(ctx.s, conversation) - {ctx.user.id}
+        outbox.emit(ctx.s, others, "typing", {"conversation_id": conversation.id, "user_id": ctx.user.id,
+                                              "name": ctx.user.first_name})
     return {}
 
 

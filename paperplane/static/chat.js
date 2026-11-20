@@ -344,11 +344,108 @@
     if (reading()) markRead(lastSeq);
   });
 
+  // ---------- Presence: the dots, and the line under a DM's name ----------
+
+  const statuses = new Map();
+
+  function agoWords(iso) {
+    const seconds = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+    if (seconds < 60) return "just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600);
+      return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+    const label = dayLabel(new Date(iso));
+    return label === "Yesterday" ? "yesterday" : `on ${label}`;
+  }
+
+  function showPresence(userId, status, lastSeen) {
+    statuses.set(userId, status);
+    document.querySelectorAll(`[data-presence-dot="${userId}"]`).forEach((dot) => {
+      dot.className = `dot dot-${status}`;
+    });
+    document.querySelectorAll(`[data-status-line][data-user="${userId}"]`).forEach((line) => {
+      if (lastSeen) line.dataset.lastSeen = lastSeen;
+      else if (status === "offline" && lastSeen === null) delete line.dataset.lastSeen;
+      if (status === "online") line.textContent = "Online";
+      else if (status === "away") line.textContent = "Away";
+      else line.textContent = line.dataset.lastSeen ? `Last seen ${agoWords(line.dataset.lastSeen)}` : `@${line.dataset.handle}`;
+    });
+  }
+
+  Live.on("presence", (data) => showPresence(data.user_id, data.status, data.last_seen));
+  Live.on("presence.snapshot", (data) => {
+    Object.entries(data.statuses || {}).forEach(([userId, status]) => showPresence(Number(userId), status, undefined));
+  });
+
+  // My tab hidden or shown: after 5 minutes with every tab hidden, friends see "Away".
+  const tellVisibility = () => Live.tell("presence", { visible: document.visibilityState === "visible" });
+  document.addEventListener("visibilitychange", tellVisibility);
+  Live.on("status", (status) => {
+    if (status === "online" && document.visibilityState !== "visible") tellVisibility();
+  });
+
+  // "Last seen 3 min ago" keeps up with the clock.
+  setInterval(() => {
+    document.querySelectorAll("[data-status-line][data-last-seen]").forEach((line) => {
+      const status = statuses.get(Number(line.dataset.user));
+      if (!status || status === "offline") line.textContent = `Last seen ${agoWords(line.dataset.lastSeen)}`;
+    });
+  }, 30000);
+
+  // ---------- Typing ----------
+
+  const typingLine = document.querySelector("[data-typing]");
+  const typists = new Map(); // user id -> { name, timer }
+
+  function drawTyping() {
+    if (!typingLine) return;
+    const names = Array.from(typists.values(), (typist) => typist.name);
+    if (names.length === 0) typingLine.textContent = "";
+    else if (names.length === 1) typingLine.textContent = `${names[0]} is typing...`;
+    else if (names.length === 2) typingLine.textContent = `${names[0]} and ${names[1]} are typing...`;
+    else typingLine.textContent = "Several people are typing...";
+  }
+
+  function stopTyping(userId) {
+    const typist = typists.get(userId);
+    if (!typist) return;
+    clearTimeout(typist.timer);
+    typists.delete(userId);
+    drawTyping();
+  }
+
+  Live.on("typing", (data) => {
+    if (data.conversation_id !== openId || data.user_id === me) return;
+    stopTyping(data.user_id);
+    typists.set(data.user_id, { name: data.name, timer: setTimeout(() => stopTyping(data.user_id), 5000) });
+    drawTyping();
+  });
+
+  // Their message arrived: they've stopped typing.
+  document.addEventListener("paperplane:message", (event) => stopTyping(event.detail.sender_id));
+
+  function setUpTypingSignal() {
+    const area = document.querySelector("[data-composer-text]");
+    if (!area || !openId) return;
+    let lastSignal = 0;
+    area.addEventListener("input", () => {
+      const now = Date.now();
+      if (area.value.trim() && now - lastSignal > 3000) {
+        lastSignal = now;
+        Live.tell("typing", { conversation_id: openId });
+      }
+    });
+    document.addEventListener("paperplane:sent", () => (lastSignal = 0));
+  }
+
   // ---------- Start ----------
 
   document.addEventListener("DOMContentLoaded", () => {
     if (messages) localize(messages);
     setUpComposer();
+    setUpTypingSignal();
     if (scroller) {
       scroller.addEventListener("scroll", () => {
         if (reading()) markRead(lastSeq);

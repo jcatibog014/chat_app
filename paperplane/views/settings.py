@@ -92,9 +92,11 @@ def page():
             s.rollback()
         else:
             abort(400, "Choose something to change.")
-    data = {}
+    data = {"settings_sections": []}
     for extra in extras:
-        data.update(extra(s, g.user))
+        more = dict(extra(s, g.user))
+        data["settings_sections"] += more.pop("settings_sections", [])
+        data.update(more)
     return render_template("settings.html", errors=errors, form=request.form, zones=zone_choices(), **data), \
         400 if errors else 200
 

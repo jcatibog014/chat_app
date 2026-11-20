@@ -87,7 +87,7 @@ def test_a_stranger_gets_not_found_and_nobody_hears_anything(app, world):
     answer = run(app, tabs["ben"], "message.send",
                  {"conversation_id": world["chat"], "body": "Let me in", "client_id": "client-0003"})
     assert answer["type"] == "error" and answer["code"] == "not_found"
-    assert tabs["maria"].ws.sent == [] and tabs["ana"].ws.sent == []
+    assert not tabs["maria"].ws.of_type("message.new") and not tabs["ana"].ws.of_type("message.new")
 
 
 def test_an_empty_message_is_invalid(app, world):
