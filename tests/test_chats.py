@@ -74,7 +74,7 @@ def test_sending_shows_on_both_sides_with_unread_counts(app, people):
     send(maria, chat, "Are you there?")
     # Ana's list: 2 unread, the last message as the preview.
     page = text(ana.get("/chats"))
-    assert re.search(r'data-unread\s*><span class="visually-hidden">Unread: </span>2<', page)
+    assert re.search(r'data-unread\s*><span class="visually-hidden">Unread: </span><span data-unread-number>2<', page)
     assert "Are you there?" in page
     assert '<span class="count" data-total-unread>2</span>' in page
     # Maria's own messages aren't unread for her.

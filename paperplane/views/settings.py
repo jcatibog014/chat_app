@@ -5,7 +5,7 @@ blocked people, notifications).
 Settings holds every control and preference (the theme, Log out); the menus
 only take you to pages.
 """
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from .. import db
@@ -66,8 +66,7 @@ def page():
                 set_password(g.user, new)
                 s.commit()
                 session["session_version"] = g.user.session_version  # this device stays logged in
-                for close in closers:
-                    close(g.user.id)
+                close_sockets(g.user.id)
                 flash("Your password has been changed. Your other devices are logged out.")
                 return redirect(url_for("settings.page"))
         elif action == "recovery":
@@ -81,8 +80,7 @@ def page():
         elif action == "logout_others":
             end_other_sessions(g.user)
             s.commit()
-            for close in closers:
-                close(g.user.id)
+            close_sockets(g.user.id)
             flash("Your other devices are logged out.")
             return redirect(url_for("settings.page", _anchor="account"))
         elif action in actions:
@@ -101,9 +99,12 @@ def page():
         400 if errors else 200
 
 
-# Called with a user id after their sessions are ended: the WebSocket hub (stage 3)
-# closes that person's open sockets, so an old tab can't keep listening.
-closers = []
+def close_sockets(user_id):
+    """After someone's sessions end, close their open WebSockets too, so an old tab can't keep
+    listening. (Every tab gets "bye" and reloads; this one simply lands on the new page.)"""
+    hub = current_app.extensions.get("paperplane_hub")
+    if hub is not None:
+        hub.close_user(user_id)
 
 
 def init_app(app):

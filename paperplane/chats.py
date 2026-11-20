@@ -138,6 +138,10 @@ def message_data(m):
         "kind": m.kind,
         "sender_id": m.sender_id,
         "sender_name": sender.name if sender else None,
+        "sender_first": sender.first_name if sender else None,
+        # The sender's tab matches this to the bubble it drew while sending. (A random id: harmless to share.)
+        "client_id": m.client_id,
+        "preview": preview_of(m),
         "body": None if m.deleted_at else m.body,
         "created_at": iso(m.created_at),
         "edited": m.edited_at is not None,
@@ -315,6 +319,9 @@ def mark_read(s, me, conversation_id, seq=None):
     membership.last_read_seq = target
     outbox.emit(s, member_ids(s, conversation), "read",
                 {"conversation_id": conversation.id, "user_id": me.id, "seq": target})
+    # My tabs on other pages can't work the menu's number out themselves: tell them.
+    s.flush()
+    outbox.emit(s, {me.id}, "unread.total", {"total": total_unread(s, me)})
     return membership, True
 
 

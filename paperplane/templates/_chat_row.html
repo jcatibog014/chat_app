@@ -5,7 +5,7 @@
 {% macro chat_row(row, open_id=None, presence_of=None) %}
   {% set c = row.conversation %}
   <li class="chat-row{% if c.id == open_id %} is-open{% endif %}{% if row.unread %} has-unread{% endif %}"
-      data-chat="{{ c.id }}" data-kind="{{ c.kind }}"{% if row.other %} data-other="{{ row.other.id }}"{% endif %}>
+      data-chat="{{ c.id }}" data-kind="{{ c.kind }}" data-last-seq="{{ c.last_seq }}"{% if row.other %} data-other="{{ row.other.id }}"{% endif %}>
     <a href="{{ url_for('chats.show', chat_id=c.id) }}"{% if c.id == open_id %} aria-current="page"{% endif %}>
       {% if row.other %}
         {{ avatar(row.other, presence=presence_of(row.other) if presence_of else None) }}
@@ -19,7 +19,7 @@
         </span>
         <span class="chat-row-bottom">
           <span class="chat-row-preview" data-preview>{% if row.last %}{% if row.last.kind != 'system' and row.last.sender_id == row.membership.user_id %}{{ 'You: ' }}{% elif c.is_group and row.last.sender %}{{ row.last.sender.first_name ~ ': ' }}{% endif %}{{ preview(row.last) }}{% else %}No messages yet{% endif %}</span>
-          <span class="badge" data-unread{% if not row.unread %} hidden{% endif %}><span class="visually-hidden">Unread: </span>{{ row.unread }}</span>
+          <span class="badge" data-unread{% if not row.unread %} hidden{% endif %}><span class="visually-hidden">Unread: </span><span data-unread-number>{{ row.unread }}</span></span>
         </span>
       </span>
     </a>

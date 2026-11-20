@@ -14,6 +14,11 @@
   {# Before the page draws, so a saved dark theme never flashes light. #}
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  {% if g.user %}
+  {# The live connection, on every page you see logged in: new messages, counts, presence. #}
+  <script src="{{ url_for('static', filename='socket.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='chat.js') }}" defer></script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}"{% if g.user %} data-me="{{ g.user.id }}" data-time-zone="{{ g.user.time_zone }}"{% endif %}>
