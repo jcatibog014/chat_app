@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar, csrf, field %}
+{% from "_icons.html" import icon %}
+{% block title %}New Chat - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('New Chat') }}
+  <div class="new-chat">
+    <section class="card" id="message-someone">
+      <h2>Message Someone</h2>
+      <p class="muted card-note">Type their username. Only people who know it can find them.</p>
+      <form method="post" action="{{ url_for('chats.new_dm') }}" class="form-row">
+        {{ csrf() }}
+        {{ field('username', 'Username', form.get('username', '') if not open_group|default(false) else '', errors.username,
+                 attrs='autocapitalize="none" spellcheck="false" placeholder="@username" required') }}
+        <button class="button" type="submit">Start chat</button>
+      </form>
+      {% if people %}
+        <h3 class="people-title">People You Know</h3>
+        <ul class="people-list">
+          {% for person in people %}
+            <li>
+              <form method="post" action="{{ url_for('chats.new_dm') }}">
+                {{ csrf() }}
+                <input type="hidden" name="person" value="{{ person.id }}">
+                <button type="submit" class="person-button">
+                  {{ avatar(person) }}
+                  <span><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></span>
+                  {{ icon('arrow', 18) }}
+                </button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+
+    <section class="card" id="new-group">
+      <h2>New Group</h2>
+      <p class="muted card-note">You will be its owner.</p>
+      <form method="post" action="{{ url_for('chats.new_group') }}" class="stack">
+        {{ csrf() }}
+        {{ field('title', 'Group name', form.get('title', ''), errors.title, attrs='maxlength="80" required placeholder="Weekend Hike"') }}
+        {% if people %}
+          <fieldset class="pick-people">
+            <legend class="field-label">Add people</legend>
+            {% set picked = form.getlist('person') if form.getlist is defined else [] %}
+            {% for person in people %}
+              <label class="check person-check">
+                <input type="checkbox" name="person" value="{{ person.id }}"{% if person.id|string in picked %} checked{% endif %}>
+                {{ avatar(person, 'small') }} <span>{{ person.name }} <span class="hint">@{{ person.handle }}</span></span>
+              </label>
+            {% endfor %}
+          </fieldset>
+        {% endif %}
+        {{ field('usernames', 'Add by username' if people else 'People to add', form.get('usernames', ''), errors.usernames,
+                 note='Usernames, with spaces or commas between them.', attrs='autocapitalize="none" spellcheck="false" placeholder="ana, ben"') }}
+        <div class="form-actions start"><button class="button" type="submit">{{ icon('group', 18) }} Make group</button></div>
+      </form>
+    </section>
+  </div>
+{% endblock %}

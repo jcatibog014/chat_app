@@ -6,9 +6,11 @@ so they read right without JavaScript. Messages that arrive live carry the
 moment in UTC (<time datetime="...Z">) and app.js writes it the same way in the
 browser's own words.
 """
+import re
 from datetime import timedelta
 
 from flask import g
+from markupsafe import Markup, escape
 
 from .dates import DEFAULT_ZONE, iso, to_zone, utcnow
 
@@ -68,5 +70,36 @@ def ago(moment, now=None):
     return label.lower() if label == "Yesterday" else f"on {label}"
 
 
+URL = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
+TRAILING = ".,!?;:)]}'\""
+
+
+def linkify(text):
+    """A message as safe HTML: everything escaped, web addresses made into links.
+
+    The text is escaped FIRST piece by piece, so nothing a person types can become
+    markup; only the <a> tags we add are real. Links open in a new tab, without
+    telling the other site where they came from (noopener, noreferrer), and "ugc"
+    tells search engines a user wrote it."""
+    out = []
+    position = 0
+    for match in URL.finditer(text or ""):
+        url = match.group(0)
+        # "see https://example.com." -> the dot isn't part of the address.
+        while url and url[-1] in TRAILING:
+            if url[-1] == ")" and url.count("(") >= url.count(")"):
+                break
+            url = url[:-1]
+        if len(url) < 12:
+            continue
+        start, end = match.start(), match.start() + len(url)
+        out.append(escape(text[position:start]))
+        out.append(Markup('<a href="{0}" target="_blank" rel="noopener noreferrer nofollow ugc">{0}</a>').format(url))
+        position = end
+    out.append(escape((text or "")[position:]))
+    return Markup("").join(out)
+
+
 def init_app(app):
-    app.jinja_env.filters.update(clock=clock, day_label=day_label, short_when=short_when, ago=ago, iso=iso)
+    app.jinja_env.filters.update(clock=clock, day_label=day_label, short_when=short_when, ago=ago, iso=iso,
+                                 linkify=linkify)

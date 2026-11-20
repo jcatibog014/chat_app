@@ -26,7 +26,7 @@
   <div class="sidebar-menu" id="side-nav">
     <nav aria-label="Main">
       <ul class="side-links">
-        {% call link('chats.index', 'Chats', 'chats', section == 'chats' and page != 'chats.new') %}<span class="count" data-total-unread{% if not total_unread|default(0) %} hidden{% endif %}>{{ total_unread|default(0) }}</span>{% endcall %}
+        {% call link('chats.index', 'Chats', 'chats', section == 'chats' and page != 'chats.new') %}{% set unread = unread_total() %}<span class="count" data-total-unread{% if not unread %} hidden{% endif %}>{{ unread }}</span>{% endcall %}
         {{ link('chats.new', 'New Chat', 'new-chat', page == 'chats.new') }}
         {{ link('search.page', 'Search', 'search', section == 'search') }}
         {{ link('settings.page', 'Settings', 'settings', section == 'settings') }}

@@ -80,6 +80,37 @@ def test_an_expired_demo_logs_out_even_before_it_is_deleted(app):
     assert not is_logged_in(client)
 
 
+def demo_pages(app, client):
+    """Every page the demo can open, with what each must show (an example, never an empty page)."""
+    mika = me(app, client)
+    with app.app_context():
+        from paperplane.models import Conversation
+        chats = db.session().scalars(select(Conversation).where(Conversation.demo_team_id == mika.demo_team_id)).all()
+    pages = {"/chats": ["Papel Studio", "Weekend Hike", "Launch Plans", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
+             "/chats/new": ["People You Know", "Dana Lim"],
+             "/settings": ["Your Account", "Time Zone"]}
+    for chat in chats:
+        pages[f"/chats/{chat.id}"] = ["msg-text"]
+    return pages
+
+
+def test_every_page_of_the_demo_shows_an_example(app):
+    client = start_demo(app)
+    for url, must_show in demo_pages(app, client).items():
+        response = client.get(url)
+        assert response.status_code == 200, url
+        page = response.get_data(as_text=True)
+        for words_needed in must_show:
+            assert words_needed in page, (url, words_needed)
+        assert "No chats yet" not in page and "No Messages Yet" not in page, url
+
+
+def test_the_demo_starts_with_unread_messages(app):
+    client = start_demo(app)
+    page = client.get("/chats").get_data(as_text=True)
+    assert '<span class="count" data-total-unread>5</span>' in page
+
+
 def test_purge_demos_command(app):
     start_demo(app)
     result = app.test_cli_runner().invoke(args=["purge-demos"])

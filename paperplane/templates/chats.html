@@ -1,7 +1,95 @@
 {% extends "base.html" %}
-{% from "_macros.html" import page_head, empty %}
-{% block title %}Chats - {{ APP_NAME }}{% endblock %}
+{% from "_macros.html" import avatar, csrf, empty %}
+{% from "_icons.html" import icon %}
+{% from "_chat_row.html" import chat_row %}
+{% from "_message.html" import message, day_break %}
+{% block title %}{% if conversation %}{{ title }}{% else %}Chats{% endif %} - {{ APP_NAME }}{% endblock %}
+{% block body_class %}chat-body{% if conversation %} has-open{% endif %}{% endblock %}
+{% block page_class %}chat-page{% endblock %}
 {% block content %}
-  {{ page_head('Chats') }}
-  {{ empty('No Chats Yet', 'Your direct messages and group chats will show here.') }}
+<div class="chat-layout">
+  {# ---------- The list of chats ---------- #}
+  <section class="chat-list-pane" aria-labelledby="chats-title">
+    <div class="list-head">
+      <h1 id="chats-title">Chats</h1>
+      <a class="icon-button" href="{{ url_for('chats.new') }}" title="New chat">{{ icon('new-chat', 20) }}<span class="visually-hidden">New chat</span></a>
+    </div>
+    {% if rows %}
+      <ul class="chat-list" data-chat-list>
+        {% for row in rows %}{{ chat_row(row, open_id, presence_of|default(None)) }}{% endfor %}
+      </ul>
+    {% else %}
+      <div class="list-empty" data-chat-list-empty>
+        <p>No chats yet.</p>
+        <a class="button button-small" href="{{ url_for('chats.new') }}">Start a chat</a>
+      </div>
+      <ul class="chat-list" data-chat-list></ul>
+    {% endif %}
+  </section>
+
+  {# ---------- The open chat ---------- #}
+  {% if conversation %}
+  <section class="conversation" aria-label="{{ title }}" data-conversation="{{ conversation.id }}"
+           data-kind="{{ conversation.kind }}" data-version="{{ conversation.version }}" data-role="{{ membership.role }}"
+           data-last-seq="{{ conversation.last_seq }}" data-read-seq="{{ membership.last_read_seq }}">
+    <header class="conversation-head">
+      <a class="icon-button back-to-list" href="{{ url_for('chats.index') }}" title="All chats">{{ icon('back', 20) }}<span class="visually-hidden">All chats</span></a>
+      {% if other %}{{ avatar(other, presence=presence_of(other) if presence_of is defined else None) }}{% else %}<span class="avatar group-avatar" aria-hidden="true">{{ icon('group', 20) }}</span>{% endif %}
+      <div class="conversation-title">
+        <h2>{{ title }}</h2>
+        <p class="conversation-sub" data-subtitle>
+          {% if other %}<span data-status-line>@{{ other.handle }}</span>
+          {% else %}{{ members|length }} members: {% for m in members %}{{ 'you' if m.user_id == g.user.id else m.user.first_name }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}
+        </p>
+      </div>
+      {% if has_page('groups.info') %}
+        <a class="icon-button" href="{{ url_for('groups.info', chat_id=conversation.id) }}" title="{{ 'Group info' if conversation.is_group else 'Chat info' }}">{{ icon('info', 20) }}<span class="visually-hidden">{{ 'Group info' if conversation.is_group else 'Chat info' }}</span></a>
+      {% endif %}
+    </header>
+
+    <div class="messages-scroll" data-scroll>
+      <ol class="messages" data-messages aria-live="polite" aria-relevant="additions">
+        {% if more %}
+          <li class="load-earlier"><a class="button button-quiet button-small" href="{{ url_for('chats.show', chat_id=conversation.id, before=messages[0].seq) }}" data-load-earlier="{{ messages[0].seq }}">Load earlier messages</a></li>
+        {% endif %}
+        {% if before %}
+          <li class="load-earlier"><a href="{{ url_for('chats.show', chat_id=conversation.id) }}">Back to the latest messages</a></li>
+        {% endif %}
+        {% if not messages and not more %}
+          <li class="chat-start" data-chat-start>
+            <p>{% if conversation.is_dm %}This is the start of your messages with {{ title }}.{% else %}This is the start of {{ title }}.{% endif %} Say hello.</p>
+          </li>
+        {% endif %}
+        {% for m, follows, new_day in thread(messages, g.user.time_zone) %}
+          {% if new_day %}{{ day_break(m.created_at) }}{% endif %}
+          {{ message(m, g.user.id, follows) }}
+        {% endfor %}
+        <li id="latest" class="latest-anchor" aria-hidden="true"></li>
+      </ol>
+    </div>
+
+    <div class="composer-area">
+      <p class="typing" data-typing aria-live="polite"></p>
+      <p class="connection-note" data-connection hidden></p>
+      {% if can('send') %}
+      <form class="composer" method="post" action="{{ url_for('chats.send', chat_id=conversation.id) }}" data-composer>
+        {{ csrf() }}
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <label class="visually-hidden" for="composer-text">Message</label>
+        <textarea id="composer-text" name="body" rows="1" maxlength="4000" placeholder="Write a message" required data-composer-text></textarea>
+        <button class="send-button" type="submit" title="Send">{{ icon('send', 20) }}<span class="visually-hidden">Send</span></button>
+      </form>
+      {% else %}
+      <p class="composer-closed">{{ cant_send_reason|default("You can't send messages here right now.") }}</p>
+      {% endif %}
+    </div>
+  </section>
+  {% else %}
+  <section class="conversation conversation-none">
+    {% call empty('Pick a Chat', 'Choose a chat on the left, or start a new one.') %}
+      <a class="button" href="{{ url_for('chats.new') }}">{{ icon('new-chat', 18) }} New chat</a>
+    {% endcall %}
+  </section>
+  {% endif %}
+</div>
 {% endblock %}

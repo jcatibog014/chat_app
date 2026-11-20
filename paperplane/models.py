@@ -7,7 +7,7 @@ STARTS with that column: without one, the cascade reads the whole table.
 """
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, false, true
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .dates import DEFAULT_ZONE, utcnow
@@ -89,3 +89,96 @@ class RateLimit(Base):
     key: Mapped[str] = mapped_column(String(200), unique=True)
     count: Mapped[int] = mapped_column(Integer, default=0)
     window_start: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class Conversation(Base):
+    """A chat: a DM between two people, or a group.
+
+    last_seq numbers the messages: each new one takes the next number inside the
+    same transaction, so every member sees the same order, and unread counts are
+    last_seq minus the member's last_read_seq (no counting query).
+    version goes up on EVERY change in the chat (a new message, an edit, a member
+    leaving...). A browser that reconnects says which version it has, and gets
+    only what changed since (chats.changes_since).
+    """
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(10))  # "dm" or "group"
+    title: Mapped[str | None] = mapped_column(String(80))  # groups only; a DM is named after the other person
+    # "4:9" for the DM between users 4 and 9 (smaller id first): one DM per pair, even if
+    # both start it at the same moment (the UNIQUE rule catches the second).
+    dm_key: Mapped[str | None] = mapped_column(String(40), unique=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_seq: Mapped[int] = mapped_column(Integer, default=0)
+    version: Mapped[int] = mapped_column(Integer, default=0)
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # Groups: may a new member read what was said before they joined? (stage 7)
+    history_visible: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # A demo's chats go with the demo.
+    demo_team_id: Mapped[int | None] = mapped_column(ForeignKey("demo_teams.id", ondelete="CASCADE"), index=True)
+
+    memberships: Mapped[list["Membership"]] = relationship(back_populates="conversation", passive_deletes=True)
+
+    @property
+    def is_dm(self):
+        return self.kind == "dm"
+
+    @property
+    def is_group(self):
+        return self.kind == "group"
+
+
+class Membership(Base):
+    """A person in a chat, with their role and how far they have read."""
+    __tablename__ = "memberships"
+    __table_args__ = (UniqueConstraint("conversation_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(10), default="member")  # owner / admin / member (access.py)
+    joined_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # The chat's last_seq when they joined: with history_visible off they see only later messages.
+    joined_seq: Mapped[int] = mapped_column(Integer, default=0)
+    last_read_seq: Mapped[int] = mapped_column(Integer, default=0)
+    # Set when they leave or are removed. The row stays (their old messages keep a sender),
+    # but access.py treats them as a stranger to the chat.
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    conversation: Mapped[Conversation] = relationship(back_populates="memberships")
+    user: Mapped[User] = relationship()
+
+    @property
+    def active(self):
+        return self.removed_at is None
+
+
+class Message(Base):
+    __tablename__ = "messages"
+    __table_args__ = (
+        UniqueConstraint("conversation_id", "seq"),
+        # A message sent twice (a reconnect, a double click, a reloaded form) has the same
+        # client_id, and is saved once. It also serves as the index for the sender's cascade.
+        UniqueConstraint("sender_id", "client_id"),
+        Index("ix_messages_conversation_version", "conversation_id", "version"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
+    seq: Mapped[int] = mapped_column(Integer)
+    # None for a system line ("Ana added Ben").
+    sender_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    client_id: Mapped[str | None] = mapped_column(String(40))
+    kind: Mapped[str] = mapped_column(String(10), default="text")  # text / system
+    body: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # The conversation's version when this message last changed (catch-up after a reconnect).
+    version: Mapped[int] = mapped_column(Integer, default=0)
+
+    sender: Mapped[User | None] = relationship()
+    conversation: Mapped[Conversation] = relationship()

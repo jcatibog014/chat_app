@@ -1,0 +1,27 @@
+{% from "_macros.html" import avatar %}
+{% from "_icons.html" import icon %}
+{# One chat in the list: its picture, name, last message, time and unread count.
+   chat.js updates the preview, time and count live, and moves the row to the top. #}
+{% macro chat_row(row, open_id=None, presence_of=None) %}
+  {% set c = row.conversation %}
+  <li class="chat-row{% if c.id == open_id %} is-open{% endif %}{% if row.unread %} has-unread{% endif %}"
+      data-chat="{{ c.id }}" data-kind="{{ c.kind }}"{% if row.other %} data-other="{{ row.other.id }}"{% endif %}>
+    <a href="{{ url_for('chats.show', chat_id=c.id) }}"{% if c.id == open_id %} aria-current="page"{% endif %}>
+      {% if row.other %}
+        {{ avatar(row.other, presence=presence_of(row.other) if presence_of else None) }}
+      {% else %}
+        <span class="avatar group-avatar" aria-hidden="true">{{ icon('group', 20) }}</span>
+      {% endif %}
+      <span class="chat-row-text">
+        <span class="chat-row-top">
+          <span class="chat-row-name">{{ row.title }}</span>
+          <time class="chat-row-time" datetime="{{ row.when|iso }}" data-when>{{ row.when|short_when }}</time>
+        </span>
+        <span class="chat-row-bottom">
+          <span class="chat-row-preview" data-preview>{% if row.last %}{% if row.last.kind != 'system' and row.last.sender_id == row.membership.user_id %}{{ 'You: ' }}{% elif c.is_group and row.last.sender %}{{ row.last.sender.first_name ~ ': ' }}{% endif %}{{ preview(row.last) }}{% else %}No messages yet{% endif %}</span>
+          <span class="badge" data-unread{% if not row.unread %} hidden{% endif %}><span class="visually-hidden">Unread: </span>{{ row.unread }}</span>
+        </span>
+      </span>
+    </a>
+  </li>
+{% endmacro %}

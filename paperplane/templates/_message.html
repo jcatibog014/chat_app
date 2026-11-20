@@ -1,0 +1,34 @@
+{% from "_macros.html" import avatar %}
+{# One message. The same macro draws the page and the live messages (message_data in chats.py),
+   so they look the same. The live copy is drawn once for everyone (viewer=None): the browser
+   adds "mine" when it is your own (chat.js), and CSS hides your avatar and name.
+   follows: the same person's message just before (within 5 minutes): no avatar or name again. #}
+{% macro message(m, viewer_id=None, follows=False) %}
+  {% if m.kind == 'system' %}
+    <li class="msg msg-system" id="m-{{ m.id }}" data-id="{{ m.id }}" data-seq="{{ m.seq }}" data-at="{{ m.created_at|iso }}">
+      <span>{{ m.body }}</span>
+    </li>
+  {% else %}
+    {% set mine = viewer_id is not none and m.sender_id == viewer_id %}
+    <li class="msg {{ 'mine' if mine else 'theirs' }}{% if follows %} follows{% endif %}{% if m.deleted_at %} is-deleted{% endif %}"
+        id="m-{{ m.id }}" data-id="{{ m.id }}" data-seq="{{ m.seq }}" data-sender="{{ m.sender_id }}" data-at="{{ m.created_at|iso }}">
+      <span class="msg-avatar">{{ avatar(m.sender, 'small') }}</span>
+      <div class="msg-body">
+        {% if m.conversation.is_group %}<span class="msg-sender">{{ m.sender.name }}</span>{% endif %}
+        <div class="bubble">
+          {% if m.deleted_at %}
+            <p class="msg-text msg-gone">Message deleted</p>
+          {% else %}
+            <p class="msg-text">{{ m.body|linkify }}</p>
+          {% endif %}
+          <span class="msg-meta">{% if m.edited_at and not m.deleted_at %}<span class="msg-edited">edited</span> {% endif %}<time datetime="{{ m.created_at|iso }}" data-clock>{{ m.created_at|clock }}</time></span>
+        </div>
+      </div>
+    </li>
+  {% endif %}
+{% endmacro %}
+
+{# The day line between messages ("Today", "Yesterday", "Monday", "Nov 3"). #}
+{% macro day_break(moment) %}
+  <li class="day-break" data-day="{{ moment|iso }}"><span>{{ moment|day_label }}</span></li>
+{% endmacro %}
