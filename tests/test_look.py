@@ -43,7 +43,8 @@ def test_text_colours_are_readable_in_both_themes():
         for ink, ground in [("--ink", "--bg"), ("--ink", "--surface"), ("--muted", "--bg"), ("--muted", "--surface"),
                             ("--muted", "--surface-soft"), ("--link", "--surface"), ("--on-accent", "--accent"),
                             ("--danger", "--surface"), ("--ink", "--bubble-mine"), ("--ink", "--bubble-theirs"),
-                            ("--sky-ink", "--sky-top"), ("--sky-ink", "--sky-bottom"), ("--sky-muted", "--sky-top")]:
+                            ("--sky-ink", "--sky-top"), ("--sky-ink", "--sky-bottom"), ("--sky-muted", "--sky-top"),
+                            ("--on-mention", "--mention"), ("--surface", "--muted"), ("--on-accent", "--accent")]:
             assert contrast(theme[ink], theme[ground]) >= 4.5, (ink, ground, theme[ink], theme[ground])
 
 

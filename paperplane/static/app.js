@@ -144,7 +144,7 @@ function setUpCopy() {
 // The service worker (installable app) and the "Install app" button in Settings.
 // Browsers that can install it fire "beforeinstallprompt"; only then does the button show.
 function setUpInstall() {
-  if ("serviceWorker" in navigator && document.querySelector('link[rel="manifest"]')) {
+  if ("serviceWorker" in navigator && document.querySelector('link[rel="manifest"]') && document.body.dataset.me) {
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Not a problem: the site works the same without it.
     });

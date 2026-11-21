@@ -18,6 +18,7 @@ bp = Blueprint("settings", __name__)
 actions = {}
 # Extra things the page shows: function(s, user) -> dict (settings_sections: templates to include)
 extras = []
+SECTION_ORDER = ["_settings_notifications.html", "_settings_presence.html", "_settings_blocked.html"]
 
 
 def end_other_sessions(user):
@@ -97,6 +98,8 @@ def page():
         more = dict(extra(s, g.user))
         data["settings_sections"] += more.pop("settings_sections", [])
         data.update(more)
+    # A fixed order, whichever part of the app added its section first.
+    data["settings_sections"].sort(key=lambda name: SECTION_ORDER.index(name) if name in SECTION_ORDER else 99)
     return render_template("settings.html", errors=errors, form=request.form, zones=zone_choices(), **data), \
         400 if errors else 200
 

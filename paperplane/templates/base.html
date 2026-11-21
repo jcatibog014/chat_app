@@ -8,6 +8,9 @@
   <link rel="preload" href="{{ url_for('static', filename='fonts/inter-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='fonts/outfit-latin-700-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/favicon.svg') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-32.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   {% block head_extra %}{% endblock %}
   <meta name="theme-color" content="#1f5f9e">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -23,7 +26,7 @@
   {% endif %}
   {% block scripts %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}"{% if g.user %} data-me="{{ g.user.id }}" data-time-zone="{{ g.user.time_zone }}"{% endif %}>
+<body class="{% block body_class %}{% endblock %}"{% if g.user %} data-me="{{ g.user.id }}" data-handle="{{ g.user.handle }}" data-time-zone="{{ g.user.time_zone }}"{% endif %}>
   <a class="skip-link" href="#main">Skip to content</a>
   {% block layout %}
   <div class="app">

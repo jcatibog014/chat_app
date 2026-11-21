@@ -396,8 +396,10 @@ def chat_row(s, viewer, conversation, membership=None):
         last = s.scalar(select(Message).where(Message.conversation_id == conversation.id,
                                               Message.seq == conversation.last_seq))
     other = other_person(s, conversation, viewer.id) if conversation.is_dm else None
-    return ChatRow(conversation, membership, conversation.title if conversation.is_group else (other.name if other else "Direct message"),
-                   other, last, unread_count(conversation, membership))
+    row = ChatRow(conversation, membership, conversation.title if conversation.is_group else (other.name if other else "Direct message"),
+                  other, last, unread_count(conversation, membership))
+    from . import notify
+    return notify.mention_counts(s, viewer, [row])[0]
 
 
 def chat_list(s, viewer):
@@ -428,7 +430,8 @@ def chat_list(s, viewer):
         title = conversation.title if conversation.is_group else (other.name if other else "Direct message")
         result.append(ChatRow(conversation, membership, title, other, last_messages.get(conversation.id),
                               unread_count(conversation, membership)))
-    return result
+    from . import notify
+    return notify.mention_counts(s, viewer, result)
 
 
 def total_unread(s, viewer, rows=None):
@@ -437,7 +440,9 @@ def total_unread(s, viewer, rows=None):
 
 
 def counts_in_total(row):
-    return True
+    """A muted chat keeps its own (grey) badge but stays out of the menu's number."""
+    from . import notify
+    return not notify.is_muted(row.membership)
 
 
 def messages_page(s, conversation, membership, before_seq=None, limit=PAGE_SIZE):

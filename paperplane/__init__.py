@@ -116,12 +116,13 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import auth, blocks, crew, db, formatting, groups, live, presence, previews, seed
+    from . import auth, blocks, crew, db, formatting, groups, live, notify, presence, previews, seed
     from .views import chats as chat_views
     from .views import demo, settings
     from .views import messages as message_views
     from .views import groups as group_views
     from .views import files as file_views
+    from .views import notify as notify_views
 
     db.init_app(app)
     auth.init_app(app)
@@ -135,8 +136,10 @@ def create_app(test_config=None):
     blocks.init_app(app)
     previews.init_app(app)
     file_views.init_app(app)
+    notify.init_app(app)
+    notify_views.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
-    for blueprint in (auth.bp, chat_views.bp, message_views.bp, group_views.bp, file_views.bp, settings.bp, demo.bp):
+    for blueprint in (auth.bp, chat_views.bp, message_views.bp, group_views.bp, file_views.bp, notify_views.bp, settings.bp, demo.bp):
         app.register_blueprint(blueprint)
     # After the blueprints: the WebSocket handshake check needs auth.load_user to have run first.
     live.init_app(app)
@@ -153,7 +156,7 @@ def create_app(test_config=None):
 
     @app.get("/favicon.ico")
     def favicon():
-        return app.send_static_file("icons/favicon.svg")
+        return app.send_static_file("icons/favicon.ico")
 
     @app.after_request
     def security_headers(response):

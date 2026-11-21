@@ -117,6 +117,7 @@
     }
     addTokens(el);
     markMyReactions(el);
+    markMentions(el);
     localize(el);
   }
 
@@ -626,6 +627,168 @@
     }
   }
 
+  // ---------- Find and notify: mentions, muted chats, notifications ----------
+
+  const myHandle = (body.dataset.handle || "").toLowerCase();
+  function markMentions(root) {
+    root.querySelectorAll(".mention[data-mention]").forEach((mention) => {
+      mention.classList.toggle("is-me", mention.dataset.mention === myHandle);
+    });
+  }
+
+  // The server decided I should hear about this message (not mine, chat not muted). Show a
+  // notification if I'm not already looking at that chat.
+  Live.on("notify", (data) => {
+    const looking = data.conversation_id === openId && document.visibilityState === "visible";
+    if (looking || !("Notification" in window) || Notification.permission !== "granted") return;
+    try {
+      const notice = new Notification(data.title, { body: data.body, tag: `chat-${data.conversation_id}`,
+        icon: "/static/icons/icon-192.png" });
+      notice.onclick = () => {
+        window.focus();
+        location.href = data.url;
+      };
+    } catch (error) {
+      // Some phones only allow notifications from the service worker: the push covers them.
+    }
+  });
+
+  Live.on("mention", (data) => {
+    const row = rowOf(data.conversation_id);
+    if (!row || (data.conversation_id === openId && reading())) return;
+    row.classList.add("has-mention");
+    const badge = row.querySelector("[data-mention-badge]");
+    if (badge) badge.hidden = false;
+  });
+
+  // Reading a chat clears its @ too.
+  Live.on("read", (data) => {
+    if (data.user_id !== me) return;
+    const row = rowOf(data.conversation_id);
+    if (row && Number(row.dataset.lastSeq || 0) <= data.seq) {
+      row.classList.remove("has-mention");
+      const badge = row.querySelector("[data-mention-badge]");
+      if (badge) badge.hidden = true;
+    }
+  });
+
+  Live.on("chat.muted", (data) => {
+    const row = rowOf(data.conversation_id);
+    if (!row) return;
+    row.classList.toggle("is-muted", data.muted);
+    if (data.muted) row.dataset.muted = "1";
+    else delete row.dataset.muted;
+  });
+
+  // "@" in a group's composer: suggest the members, by name or handle.
+  function setUpMentionSuggestions() {
+    const list = document.querySelector("[data-mention-list]");
+    const area = document.querySelector("[data-composer-text]");
+    const people = conversation && conversation.dataset.people ? JSON.parse(conversation.dataset.people) : [];
+    if (!list || !area || !people.length) return;
+    let choices = [];
+    let chosen = 0;
+    const close = () => {
+      list.hidden = true;
+      choices = [];
+    };
+    const wordAtCaret = () => {
+      const before = area.value.slice(0, area.selectionStart);
+      const match = before.match(/(^|\s)@([a-z0-9_]{0,20})$/i);
+      return match ? match[2].toLowerCase() : null;
+    };
+    const draw = () => {
+      list.replaceChildren(...choices.map((person, index) => {
+        const item = document.createElement("li");
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", index === chosen ? "true" : "false");
+        item.textContent = person.name;
+        const handle = document.createElement("small");
+        handle.textContent = `@${person.handle}`;
+        item.append(handle);
+        item.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          pick(person);
+        });
+        return item;
+      }));
+      list.hidden = !choices.length;
+    };
+    const pick = (person) => {
+      const caret = area.selectionStart;
+      const before = area.value.slice(0, caret).replace(/@([a-z0-9_]*)$/i, `@${person.handle} `);
+      area.value = before + area.value.slice(caret);
+      area.selectionStart = area.selectionEnd = before.length;
+      close();
+      area.focus();
+    };
+    area.addEventListener("input", () => {
+      const word = wordAtCaret();
+      if (word === null) return close();
+      choices = people.filter((person) => person.handle.toLowerCase().startsWith(word)
+        || person.name.toLowerCase().split(" ").some((part) => part.startsWith(word))).slice(0, 6);
+      chosen = 0;
+      draw();
+    });
+    area.addEventListener("keydown", (event) => {
+      if (list.hidden) return;
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        chosen = (chosen + (event.key === "ArrowDown" ? 1 : choices.length - 1)) % choices.length;
+        draw();
+      } else if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        event.stopImmediatePropagation(); // Enter picks a name here, it doesn't send
+        pick(choices[chosen]);
+      } else if (event.key === "Escape") {
+        close();
+      }
+    }, true);
+    area.addEventListener("blur", () => setTimeout(close, 150));
+  }
+
+  // Settings: "Turn on notifications". Asks the browser, then (when the server has VAPID keys)
+  // subscribes this device to web push and sends the subscription to the server.
+  function setUpNotifyButton() {
+    const button = document.querySelector("[data-notify-on]");
+    if (!button) return;
+    const note = document.querySelector("[data-notify-note]");
+    const say = (text) => { if (note) note.textContent = text; };
+    if (!("Notification" in window)) {
+      button.hidden = true;
+      say("This browser can't show notifications.");
+      return;
+    }
+    if (Notification.permission === "granted" && !button.dataset.key) button.textContent = "Notifications are on";
+    button.addEventListener("click", async () => {
+      try {
+        if ((await Notification.requestPermission()) !== "granted") {
+          say("Notifications are blocked for this site. Allow them in the browser's settings.");
+          return;
+        }
+        const key = button.dataset.key;
+        if (!key || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+          button.textContent = "Notifications are on";
+          say("You'll get notifications while Paper Plane is open in a tab.");
+          return;
+        }
+        const raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (key.length % 4)) % 4)),
+          (c) => c.charCodeAt(0));
+        const worker = await navigator.serviceWorker.ready;
+        const subscription = await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+        const response = await fetch(button.dataset.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+          body: JSON.stringify(subscription),
+        });
+        button.textContent = "Notifications are on";
+        say(response.ok ? "This device gets notifications, even when no tab is open." : "That didn't work. Please try again.");
+      } catch (error) {
+        say("This browser couldn't turn on notifications.");
+      }
+    });
+  }
+
   // ---------- Presence: the dots, and the line under a DM's name ----------
 
   const statuses = new Map();
@@ -729,7 +892,12 @@
     setUpComposer();
     setUpTypingSignal();
     setUpTools();
-    if (messages) markMyReactions(messages);
+    setUpMentionSuggestions();
+    setUpNotifyButton();
+    if (messages) {
+      markMyReactions(messages);
+      markMentions(messages);
+    }
     if (scroller) {
       scroller.addEventListener("scroll", () => {
         if (reading()) markRead(lastSeq);

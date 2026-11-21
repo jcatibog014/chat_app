@@ -208,6 +208,15 @@ def sample_chats(s, team, people, moment):
                                   "for its rolling peaks and wide views."))
     read_up_to(s, hike, mika)
 
+    # Find and notify (stage 9): Ana mentions Mika (a red @ on Papel Studio), and Mika muted
+    # Weekend Hike, which has a new message (a grey badge, left out of the menu's number).
+    from . import notify
+    ask = say(s, studio, ana, "@mika can you bring the printed mockups on Thursday?", ago(moment, minutes=8))
+    notify.record_mentions(s, studio, ask, moment)
+    say(s, hike, ben, "The bus leaves at 5 AM sharp. Don't be late!", ago(moment, hours=3))
+    s.scalar(select(Membership).where(Membership.conversation_id == hike.id,
+                                      Membership.user_id == mika.id)).notify_off_until = notify.FOREVER
+
     # Dana was here two hours ago: her chats say "Last seen 2 hours ago" until the crew brings her in.
     dana.last_seen_at = ago(moment, hours=2)
     for person in (ana, ben, carlo):

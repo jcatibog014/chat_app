@@ -89,7 +89,9 @@ def demo_pages(app, client):
     pages = {"/chats": ["Papel Studio", "Weekend Hike", "Launch Plans", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
              "/chats/new": ["People You Know", "Dana Lim"],
              "/settings": ["Your Account", "Time Zone"],
-             "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"]}
+             "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"],
+             "/search": ["Search Your Messages"],
+             "/search?q=mockups": ["<mark>mockups</mark>", "Papel Studio"]}
     for chat in chats:
         pages[f"/chats/{chat.id}"] = ["msg-text"]
         pages[f"/chats/{chat.id}/info"] = ["Group Info", "People", "Leave the Group"] if chat.is_group else ["Chat Info", "Block"]
@@ -115,7 +117,7 @@ def test_every_page_of_the_demo_shows_an_example(app):
 def test_the_demo_starts_with_unread_messages(app):
     client = start_demo(app)
     page = client.get("/chats").get_data(as_text=True)
-    assert '<span class="count" data-total-unread>5</span>' in page
+    assert '<span class="count" data-total-unread>6</span>' in page
 
 
 def test_purge_demos_command(app):

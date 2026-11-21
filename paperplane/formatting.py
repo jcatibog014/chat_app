@@ -93,11 +93,21 @@ def linkify(text):
         if len(url) < 12:
             continue
         start, end = match.start(), match.start() + len(url)
-        out.append(escape(text[position:start]))
+        out.append(mentions(escape(text[position:start])))
         out.append(Markup('<a href="{0}" target="_blank" rel="noopener noreferrer nofollow ugc">{0}</a>').format(url))
         position = end
-    out.append(escape((text or "")[position:]))
+    out.append(mentions(escape((text or "")[position:])))
     return Markup("").join(out)
+
+
+MENTION = re.compile(r"(?<![\w@.&;])@([a-z][a-z0-9_]{2,19})\b", re.IGNORECASE)
+
+
+def mentions(escaped):
+    """@handles in already-escaped text, drawn as a highlight (chat.js marks the ones about you).
+    The text is escaped first, and a handle is only letters, numbers and _, so this adds no risk."""
+    return Markup(MENTION.sub(lambda match: f'<span class="mention" data-mention="{match.group(1).lower()}">@{match.group(1)}</span>',
+                              str(escaped)))
 
 
 def init_app(app):

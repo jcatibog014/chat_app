@@ -150,6 +150,9 @@ class Membership(Base):
     removed_at: Mapped[datetime | None] = mapped_column(DateTime)
     # A group's owner or admin muted them: they can read, but not send or react, until then.
     muted_until: Mapped[datetime | None] = mapped_column(DateTime)
+    # THEY muted the chat (stage 9): no notifications and a grey badge until then. Not the same
+    # as muted_until above, which an admin sets to stop someone talking.
+    notify_off_until: Mapped[datetime | None] = mapped_column(DateTime)
 
     conversation: Mapped[Conversation] = relationship(back_populates="memberships")
     user: Mapped[User] = relationship()
@@ -254,6 +257,30 @@ class LinkPreview(Base):
     title: Mapped[str | None] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(String(300))
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Mention(Base):
+    """@someone in a group message: they get a red @ on the chat and a notification."""
+    __tablename__ = "mentions"
+    __table_args__ = (UniqueConstraint("message_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    seq: Mapped[int] = mapped_column(Integer)
+
+
+class PushSubscription(Base):
+    """A browser or phone that asked for notifications when no tab is open (web push)."""
+    __tablename__ = "push_subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    endpoint: Mapped[str] = mapped_column(String(1000), unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Reaction(Base):

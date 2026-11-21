@@ -70,6 +70,8 @@ def show(chat_id):
         client_id=chats.new_client_id(), replying=replying,
         seen=tools.seen_words(conversation, readers, last, g.user.id),
         readers={str(user_id): {"name": name, "seq": seq} for user_id, (name, seq) in readers.items()},
+        people=[{"handle": m.user.handle, "name": m.user.name} for m in members if m.user_id != g.user.id]
+        if conversation.is_group else [],
         can=lambda action, target=None: access.can(action, conversation, membership, target,
                                                    **(flags if action in access.SPEAKING else {})))
 
