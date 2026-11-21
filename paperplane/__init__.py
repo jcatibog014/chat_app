@@ -116,7 +116,7 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import auth, db, formatting, live, presence, seed
+    from . import auth, crew, db, formatting, live, presence, seed
     from .views import chats as chat_views
     from .views import demo, settings
 
@@ -132,6 +132,7 @@ def create_app(test_config=None):
     # After the blueprints: the WebSocket handshake check needs auth.load_user to have run first.
     live.init_app(app)
     presence.init_app(app)
+    crew.init_app(app)
 
     from .dates import utcnow
     app.jinja_env.globals.update(APP_NAME=APP_NAME, TAGLINE=TAGLINE, now=utcnow,

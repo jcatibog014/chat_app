@@ -16,7 +16,10 @@
     {% if g.user.is_demo %}
     <details class="demo-tag" data-popover>
       <summary title="About the demo">Demo</summary>
-      <div class="demo-note">A sample team, just for you. Your teammates are made up, and everything is deleted 24 hours after you started.</div>
+      <div class="demo-note">
+        <p>A sample team, just for you. Your teammates are made up, and everything is deleted 24 hours after you started.</p>
+        {% if not g.user.is_bot %}<a href="{{ url_for('demo.friends') }}">Invite a friend to play a teammate</a>{% endif %}
+      </div>
     </details>
     {% endif %}
     <button class="menu-button" type="button" data-menu-button aria-expanded="false" aria-controls="side-nav" aria-label="Menu" hidden>

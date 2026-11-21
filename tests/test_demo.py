@@ -88,7 +88,8 @@ def demo_pages(app, client):
         chats = db.session().scalars(select(Conversation).where(Conversation.demo_team_id == mika.demo_team_id)).all()
     pages = {"/chats": ["Papel Studio", "Weekend Hike", "Launch Plans", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
              "/chats/new": ["People You Know", "Dana Lim"],
-             "/settings": ["Your Account", "Time Zone"]}
+             "/settings": ["Your Account", "Time Zone"],
+             "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"]}
     for chat in chats:
         pages[f"/chats/{chat.id}"] = ["msg-text"]
     return pages

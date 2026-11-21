@@ -250,7 +250,8 @@ html:not(.js) .js-only { display: none !important; }
 .dot { position: absolute; right: -1px; bottom: -1px; width: 30%; height: 30%; min-width: .7rem; min-height: .7rem; border-radius: 50%; background: var(--offline); box-shadow: 0 0 0 2px var(--surface); }
 .dot-online { background: var(--online); }
 .dot-away { background: var(--away); }
-.dot-offline { background: transparent; box-shadow: inset 0 0 0 2px var(--offline), 0 0 0 2px var(--surface); }
+/* Offline: no dot at all (a quiet list reads better than a row of grey rings). */
+.dot-offline { display: none; }
 
 /* ---------- Cards, empty states ---------- */
 
@@ -494,6 +495,16 @@ details.fold[open] { flex: 1 1 100%; }
 .pick-people legend { margin-bottom: .4rem; }
 .person-check { align-items: center; }
 .person-check input { margin: 0; }
+
+/* The demo's friend links and the Join page */
+.narrow-card { max-width: 46rem; }
+.friend-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.friend-list li { display: flex; align-items: center; gap: .9rem; }
+.friend-link { flex: 1 1 auto; min-width: 0; display: grid; gap: .3rem; }
+.join-card { text-align: center; display: grid; justify-items: center; gap: .6rem; }
+.join-card h1 { margin: .3rem 0 0; }
+.join-card form { width: 100%; margin-top: .4rem; }
+.demo-note p + a { display: inline-block; margin-top: .5rem; font-weight: 600; color: var(--link) !important; }
 
 /* Narrow screens: the list OR the chat, never both squeezed. */
 @media (max-width: 55.99rem) {

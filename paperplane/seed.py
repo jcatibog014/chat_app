@@ -156,6 +156,11 @@ def sample_chats(s, team, people, moment):
     say(s, launch, dana, "I can book the photographer.", ago(moment, days=4, hours=1, minutes=45))
     read_up_to(s, launch, mika)
 
+    # Dana was here two hours ago: her chats say "Last seen 2 hours ago" until the crew brings her in.
+    dana.last_seen_at = ago(moment, hours=2)
+    for person in (ana, ben, carlo):
+        person.last_seen_at = ago(moment, minutes=20)
+
     # The others have read their own chats (so "Seen by" has something to show later).
     for conversation in (studio, with_ana, with_ben, with_carlo, hike, launch):
         for person in (ana, ben, carlo, dana):
