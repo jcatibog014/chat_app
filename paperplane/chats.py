@@ -153,6 +153,11 @@ def message_data(m):
         "deleted": m.deleted_at is not None,
         "reply_to_id": m.reply_to_id,
         "reactions": getattr(m, "reaction_list", []),
+        "attachments": [{"id": a.id, "kind": a.kind, "name": a.filename, "size": a.size}
+                        for a in getattr(m, "attachment_list", [])],
+        "link": None if getattr(m, "link_preview", None) is None else {
+            "url": m.link_preview.url, "title": m.link_preview.title,
+            "description": m.link_preview.description, "site_name": m.link_preview.site_name},
         "html": render_fragment("_message_live.html", m=m),
     }
 
@@ -182,6 +187,13 @@ def preview_of(m):
         return ""
     if m.deleted_at:
         return "Message deleted"
+    if not m.body and m.kind == "text":
+        from . import files
+        from sqlalchemy.orm import object_session
+        session = object_session(m)
+        found = files.attachments_for(session, [m.id]).get(m.id, []) if session is not None else []
+        if found:
+            return "Photo" if found[0].kind == "image" else found[0].filename
     text = " ".join(m.body.split())
     return text[:90] + ("..." if len(text) > 90 else "")
 
@@ -252,20 +264,29 @@ def announce_new_chat(s, conversation, user_ids):
 
 # ---------- Sending ----------
 
-def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=None):
+def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=None, upload=None):
     """Save a message and send it to every member. Returns (message, was_already_sent).
 
     The same client_id twice (a reconnect re-sending, a double click) gives back the
-    first message and sends nothing again: that is what makes re-sending safe."""
-    body = clean_body(body)
+    first message and sends nothing again: that is what makes re-sending safe.
+    upload: a checked picture or file (files.prepare) to save with it; then the words
+    may be left out."""
+    if upload is not None:
+        body = (body or "").replace("\r\n", "\n").strip()
+        if len(body) > BODY_MAX_LENGTH:
+            raise Invalid(f"A message can be at most {BODY_MAX_LENGTH} characters.")
+    else:
+        body = clean_body(body)
     client_id = clean_client_id(client_id) or new_client_id()
     earlier = s.scalar(select(Message).where(Message.sender_id == me.id, Message.client_id == client_id))
     if earlier is not None:
         return earlier, True
     conversation, membership = access.load(s, me, conversation_id, lock=True)
     require_speaking("send", s, conversation, membership, me, moment)
-    from . import tools
+    from . import files, tools
     target = tools.reply_target(s, me, conversation, membership, reply_to_id)
+    if upload is not None:
+        files.check_room(s, me, len(upload.data))
     seq, version = bump(s, conversation, moment, new_message=True)
     message = Message(conversation_id=conversation.id, seq=seq, sender_id=me.id, client_id=client_id,
                       kind="text", body=body, created_at=moment, version=version,
@@ -282,6 +303,8 @@ def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=No
             raise
         return earlier, True
     message.sender = me
+    if upload is not None:
+        files.attach(s, message, me, upload)
     # You have read everything up to your own message.
     membership.last_read_seq = seq
     after_send(s, conversation, message, moment)

@@ -7,7 +7,8 @@ STARTS with that column: without one, the cascade reads the whole table.
 """
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false, true
+from sqlalchemy import (Boolean, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, false,
+                        true)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .dates import DEFAULT_ZONE, utcnow
@@ -220,6 +221,39 @@ class Block(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     blocked: Mapped[User] = relationship(foreign_keys=[blocked_id])
+
+
+class Attachment(Base):
+    """A picture or file sent with a message (files.py). Kept in the database: small (5 MB at
+    most), and served only to people who may see the message it belongs to."""
+    __tablename__ = "attachments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    uploader_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # "image" (re-saved as WebP by us) or "file"
+    filename: Mapped[str] = mapped_column(String(200))
+    content_type: Mapped[str] = mapped_column(String(100))
+    size: Mapped[int] = mapped_column(Integer)
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)   # not loaded unless asked for
+    thumb: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class LinkPreview(Base):
+    """The title and description of the first web address in a message (previews.py)."""
+    __tablename__ = "link_previews"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), unique=True)
+    url: Mapped[str] = mapped_column(String(2000))
+    site_name: Mapped[str | None] = mapped_column(String(100))
+    title: Mapped[str | None] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(String(300))
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Reaction(Base):

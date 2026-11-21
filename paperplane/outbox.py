@@ -15,6 +15,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 KEY = "outbox"
+JOBS = "outbox_jobs"
 HUB = "paperplane_hub"
 
 
@@ -32,6 +33,12 @@ def emit_each(s, user_ids, kind, make_data):
             emit(s, {user_id}, kind, make_data(user_id))
 
 
+def after_commit(s, job):
+    """Run job() once this session's transaction commits (never if it rolls back): work that
+    needs the saved rows, like fetching a link preview in the background."""
+    s.info.setdefault(JOBS, []).append(job)
+
+
 def pending(s):
     """The events held on this session (tests look at them)."""
     return list(s.info.get(KEY, []))
@@ -39,6 +46,11 @@ def pending(s):
 
 @event.listens_for(Session, "after_commit")
 def _send(s):
+    for job in s.info.pop(JOBS, []):
+        try:
+            job()
+        except Exception:  # a background job failing to start must not break the commit
+            pass
     events = s.info.pop(KEY, None)
     app = s.info.get("app")
     if not events or app is None:
@@ -53,3 +65,4 @@ def _send(s):
 @event.listens_for(Session, "after_rollback")
 def _forget(s):
     s.info.pop(KEY, None)
+    s.info.pop(JOBS, None)

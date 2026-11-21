@@ -4,13 +4,13 @@ These pages work without JavaScript: sending is a normal form POST, and the
 page is drawn again. With JavaScript, socket.js and chat.js send and receive
 over the WebSocket instead, and these pages are only loaded once.
 """
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
 
-from .. import access, chats, db, tools
+from .. import access, chats, db, files, tools
 from ..auth import login_required
 from ..dates import utcnow
 from ..models import User
-from ..problems import Forbidden, Invalid, NotFound, Problem
+from ..problems import Forbidden, Invalid, NotFound, Problem, TooMany
 
 bp = Blueprint("chats", __name__)
 
@@ -93,15 +93,25 @@ def cant_send_reason(s, conversation, membership, flags):
 @bp.post("/chats/<int:chat_id>/send")
 @login_required
 def send(chat_id):
+    """Send by form: the plain page's composer, and chat.js when a picture or file goes too
+    (big files travel over HTTP, not the WebSocket). chat.js asks for JSON back."""
     s = db.session()
+    wants_json = request.accept_mimetypes.best == "application/json"
+    upload = request.files.get("file")
     try:
-        chats.send_message(s, g.user, chat_id, request.form.get("body"), request.form.get("client_id"), utcnow(),
-                           reply_to_id=request.form.get("reply_to", type=int))
-    except Invalid as problem:
+        prepared = files.prepare(upload.filename, upload.read()) if upload and upload.filename else None
+        message, duplicate = chats.send_message(s, g.user, chat_id, request.form.get("body"),
+                                                request.form.get("client_id"), utcnow(),
+                                                reply_to_id=request.form.get("reply_to", type=int), upload=prepared)
+    except (Invalid, TooMany) as problem:
         s.rollback()
+        if wants_json:
+            return jsonify(error=problem.code, message=problem.message), problem.status
         flash(problem.message, "error")
         return redirect(url_for("chats.show", chat_id=chat_id))
     s.commit()
+    if wants_json:
+        return jsonify(message=chats.message_data(message), duplicate=duplicate)
     return redirect(url_for("chats.show", chat_id=chat_id, _anchor="latest"))
 
 

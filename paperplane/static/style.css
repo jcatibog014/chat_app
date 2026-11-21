@@ -509,6 +509,27 @@ details.fold[open] { flex: 1 1 100%; }
 .edit-box textarea { max-width: none; min-height: 4rem; }
 .edit-box .form-actions { gap: .4rem; }
 
+/* Pictures, files and link cards inside a bubble */
+.photo { display: block; margin: .1rem 0 .35rem; }
+.photo img { display: block; max-width: min(18rem, 100%); height: auto; border-radius: 10px; background: var(--surface-soft); }
+.file-card { display: flex; align-items: center; gap: .6rem; margin: .1rem 0 .35rem; padding: .55rem .7rem; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); text-decoration: none; max-width: 20rem; }
+.file-card:hover { border-color: var(--control-border); color: var(--ink); }
+.file-card svg:first-child { color: var(--link); flex: 0 0 auto; }
+.file-text { flex: 1 1 auto; min-width: 0; display: grid; }
+.file-text strong { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-text small { color: var(--muted); }
+.link-card { display: grid; gap: .1rem; margin: .4rem 0 .2rem; padding: .5rem .7rem; border-left: 3px solid var(--accent); border-radius: 6px; background: var(--surface-soft); color: var(--ink); text-decoration: none; max-width: 26rem; }
+.link-card small { color: var(--muted); font-size: .75rem; }
+.link-card strong { font-size: .9rem; color: var(--link); }
+.link-card span { font-size: .84rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.msg .no-edit { display: none; }
+.attach-button { position: relative; flex: 0 0 auto; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; margin-left: -.5rem; border-radius: 50%; color: var(--muted); cursor: pointer; }
+.attach-button:hover, .attach-button:focus-within { background: var(--surface-soft); color: var(--ink); }
+.attach-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.attach-chip { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; padding: .35rem .4rem .35rem .6rem; border-radius: var(--radius-small); background: var(--surface); border: 1px solid var(--rule); font-size: .88rem; max-width: 24rem; }
+.attach-chip img { width: 2.6rem; height: 2.6rem; object-fit: cover; border-radius: 6px; }
+.attach-chip span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* A message you send glides in like a paper plane landing. */
 .msg.is-new.mine .bubble { animation: glide .5s cubic-bezier(.2, .8, .2, 1); }
 .msg.is-new.theirs .bubble { animation: drift .35s ease-out; }

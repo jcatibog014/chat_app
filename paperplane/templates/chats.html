@@ -80,12 +80,22 @@
           <span data-reply-snippet>{{ replying.body|truncate(80, True, '...') if replying else '' }}</span></span>
         <a class="icon-button icon-button-small" href="{{ url_for('chats.show', chat_id=conversation.id) }}" data-reply-cancel title="Cancel reply">{{ icon('x', 16) }}<span class="visually-hidden">Cancel reply</span></a>
       </div>
-      <form class="composer" id="composer" method="post" action="{{ url_for('chats.send', chat_id=conversation.id) }}" data-composer>
+      <div class="attach-chip" data-attach-chip hidden>
+        <img data-attach-thumb alt="" hidden>
+        <span data-attach-name></span>
+        <button class="icon-button icon-button-small" type="button" data-attach-clear title="Remove the file">{{ icon('x', 16) }}<span class="visually-hidden">Remove the file</span></button>
+      </div>
+      <form class="composer" id="composer" method="post" action="{{ url_for('chats.send', chat_id=conversation.id) }}" enctype="multipart/form-data" data-composer>
         {{ csrf() }}
         <input type="hidden" name="client_id" value="{{ client_id }}">
         <input type="hidden" name="reply_to" value="{{ replying.id if replying else '' }}" data-reply-to>
         <label class="visually-hidden" for="composer-text">Message</label>
-        <textarea id="composer-text" name="body" rows="1" maxlength="4000" placeholder="Write a message" required data-composer-text></textarea>
+        <label class="attach-button" title="Send a picture or file">
+          {{ icon('paperclip', 20) }}<span class="visually-hidden">Send a picture or file</span>
+          <input type="file" name="file" data-attach-input
+                 accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.txt,.csv,.md,.docx,.xlsx,.pptx,.zip">
+        </label>
+        <textarea id="composer-text" name="body" rows="1" maxlength="4000" placeholder="Write a message" data-composer-text></textarea>
         <button class="send-button" type="submit" title="Send">{{ icon('send', 20) }}<span class="visually-hidden">Send</span></button>
       </form>
       {% else %}

@@ -232,10 +232,64 @@
       });
   }
 
+  // A picture or file goes up over HTTP (the WebSocket carries only small frames): the same
+  // form the page uses without JavaScript, sent with fetch, answered with JSON.
+  function uploadMessage(form, text, file, clientId, replyTo, el) {
+    const data = new FormData();
+    data.append("csrf_token", csrfToken);
+    data.append("body", text);
+    data.append("client_id", clientId);
+    if (replyTo) data.append("reply_to", replyTo);
+    data.append("file", file);
+    el.querySelector(".msg-meta").textContent = "Uploading...";
+    fetch(form.action, { method: "POST", body: data, headers: { Accept: "application/json", "X-CSRF-Token": csrfToken } })
+      .then(async (response) => {
+        const answer = await response.json().catch(() => ({}));
+        if (!response.ok) throw { message: answer.message || "That file couldn't be sent." };
+        const m = answer.message;
+        if (document.getElementById(`m-${m.id}`)) el.remove();
+        else if (el.isConnected) showMessage(m);
+      })
+      .catch((error) => {
+        el.classList.remove("is-pending");
+        el.classList.add("is-failed");
+        el.querySelector(".msg-meta").textContent = "Not sent.";
+        showError(error);
+      });
+  }
+
   function setUpComposer() {
     const form = document.querySelector("[data-composer]");
     if (!form || !openId) return;
     const area = form.querySelector("[data-composer-text]");
+    const fileInput = form.querySelector("[data-attach-input]");
+    const chip = document.querySelector("[data-attach-chip]");
+    let thumbUrl = null;
+    const clearFile = () => {
+      if (fileInput) fileInput.value = "";
+      if (chip) chip.hidden = true;
+      if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+      thumbUrl = null;
+    };
+    if (fileInput && chip) {
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return clearFile();
+        if (file.size > 5 * 1000 * 1000) {
+          showError({ message: "A file can be at most 5 MB." });
+          return clearFile();
+        }
+        chip.querySelector("[data-attach-name]").textContent = `${file.name} (${Math.max(1, Math.round(file.size / 1000))} KB)`;
+        const thumb = chip.querySelector("[data-attach-thumb]");
+        if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+        thumbUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+        thumb.hidden = !thumbUrl;
+        if (thumbUrl) thumb.src = thumbUrl;
+        chip.hidden = false;
+        area.focus();
+      });
+      chip.querySelector("[data-attach-clear]").addEventListener("click", clearFile);
+    }
     const fit = () => {
       area.style.height = "auto";
       area.style.height = `${Math.min(area.scrollHeight, 160)}px`;
@@ -251,16 +305,22 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const text = area.value.trim();
-      if (!text) return;
+      const file = fileInput && fileInput.files[0];
+      if (!text && !file) return;
       const clientId = newId();
       const replyTo = replyInput && Number(replyInput.value) ? Number(replyInput.value) : null;
-      const el = pendingBubble(text, clientId);
+      const el = pendingBubble(text || file.name, clientId);
       append(el);
       area.value = "";
       fit();
       setReply(null);
       if (scroller) scroller.scrollTop = 0;
-      sendMessage(text, clientId, el, replyTo);
+      if (file) {
+        uploadMessage(form, text, file, clientId, replyTo, el);
+        clearFile();
+      } else {
+        sendMessage(text, clientId, el, replyTo);
+      }
       document.dispatchEvent(new CustomEvent("paperplane:sent"));
     });
   }

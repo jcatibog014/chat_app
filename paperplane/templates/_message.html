@@ -29,10 +29,32 @@
                 <span>{{ m.reply_info.snippet }}</span>
               </a>
             {% endif %}
+            {% for a in m.attachment_list|default([]) %}
+              {% if a.kind == 'image' %}
+                {% set scale = [1, 480 / ([a.width or 480, a.height or 480]|max)]|min %}
+                <a class="photo" href="{{ url_for('files.show', attachment_id=a.id) }}" target="_blank" rel="noopener">
+                  <img src="{{ url_for('files.thumb', attachment_id=a.id) }}" alt="Picture{% if m.sender %} from {{ m.sender.first_name }}{% endif %}"
+                       width="{{ ((a.width or 480) * scale)|int }}" height="{{ ((a.height or 480) * scale)|int }}" loading="lazy">
+                </a>
+              {% else %}
+                <a class="file-card" href="{{ url_for('files.show', attachment_id=a.id) }}" download>
+                  {{ icon('file', 22) }}
+                  <span class="file-text"><strong>{{ a.filename }}</strong><small>{{ a.size|human_size }}</small></span>
+                  {{ icon('download', 18) }}
+                </a>
+              {% endif %}
+            {% endfor %}
             {% if m.deleted_at %}
               <p class="msg-text msg-gone">Message deleted</p>
-            {% else %}
+            {% elif m.body %}
               <p class="msg-text" data-text>{{ m.body|linkify }}</p>
+            {% endif %}
+            {% if m.link_preview and not m.deleted_at %}
+              <a class="link-card" href="{{ m.link_preview.url }}" target="_blank" rel="noopener noreferrer nofollow ugc">
+                {% if m.link_preview.site_name %}<small>{{ m.link_preview.site_name }}</small>{% endif %}
+                <strong>{{ m.link_preview.title }}</strong>
+                {% if m.link_preview.description %}<span>{{ m.link_preview.description }}</span>{% endif %}
+              </a>
             {% endif %}
             <span class="msg-meta">{% if m.edited_at and not m.deleted_at %}<span class="msg-edited">edited</span> {% endif %}<time datetime="{{ m.created_at|iso }}" data-clock>{{ m.created_at|clock }}</time></span>
           </div>
@@ -50,8 +72,8 @@
                 {% endfor %}
               </div>
               <a class="menu-item" href="{{ url_for('chats.show', chat_id=m.conversation_id, reply=m.id) }}#composer" data-tool="reply"
-                 data-reply-name="{{ m.sender.first_name }}" data-reply-snippet="{{ m.body|truncate(80, True, '...') }}">{{ icon('reply', 16) }} Reply</a>
-              <a class="menu-item only-mine" href="{{ url_for('messages.edit', message_id=m.id) }}" data-tool="edit">{{ icon('pencil', 16) }} Edit</a>
+                 data-reply-name="{{ m.sender.first_name }}" data-reply-snippet="{{ (m.body or 'Photo or file')|truncate(80, True, '...') }}">{{ icon('reply', 16) }} Reply</a>
+              <a class="menu-item only-mine{% if not m.body %} no-edit{% endif %}" href="{{ url_for('messages.edit', message_id=m.id) }}" data-tool="edit">{{ icon('pencil', 16) }} Edit</a>
               <form class="msg-delete" method="post" action="{{ url_for('messages.delete', message_id=m.id) }}" data-tool="delete"
                     data-confirm="Delete this message for everyone? It can't be brought back.">
                 {% if page %}{{ csrf() }}{% endif %}

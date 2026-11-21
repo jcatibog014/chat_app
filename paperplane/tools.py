@@ -74,7 +74,12 @@ def edit_message(s, me, message_id, body, moment):
         return message
     message.body = body
     message.edited_at = moment
+    # The words changed, so the link preview may be wrong: drop it and look again.
+    from . import previews
+    from .models import LinkPreview
+    s.execute(delete(LinkPreview).where(LinkPreview.message_id == message.id))
     changed(s, conversation, message, moment)
+    previews.notice(s, conversation, message, moment)
     return message
 
 
@@ -100,6 +105,10 @@ def delete_message(s, me, message_id, moment):
     message.body = ""
     message.deleted_at = moment
     s.execute(delete(Reaction).where(Reaction.message_id == message.id))
+    from . import files
+    files.forget(s, message)  # its pictures and files go too
+    from .models import LinkPreview
+    s.execute(delete(LinkPreview).where(LinkPreview.message_id == message.id))
     changed(s, conversation, message, moment)
     return message
 
@@ -145,7 +154,12 @@ def prepare(s, messages):
     if reply_ids:
         for target in s.scalars(select(Message).where(Message.id.in_(reply_ids))):
             replies[target.id] = target
+    from . import files, previews
+    attached = files.attachments_for(s, ids)
+    linked = previews.previews_for(s, ids)
     for m in messages:
+        m.attachment_list = [] if m.deleted_at else attached.get(m.id, [])
+        m.link_preview = None if m.deleted_at else linked.get(m.id)
         m.reaction_list = [
             {"emoji": emoji, "count": len(people), "users": [user_id for user_id, _ in people],
              "names": ", ".join(name for _, name in people), "label": EMOJI_NAMES[emoji]}
@@ -154,7 +168,7 @@ def prepare(s, messages):
         target = replies.get(m.reply_to_id)
         m.reply_info = None
         if target is not None:
-            text = " ".join(target.body.split())
+            text = " ".join(target.body.split()) or "Photo or file"
             m.reply_info = {
                 "id": target.id,
                 "name": target.sender.first_name if target.sender else "Paper Plane",

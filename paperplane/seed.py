@@ -192,6 +192,22 @@ def sample_chats(s, team, people, moment):
                      max_uses=10, uses=2))
     read_up_to(s, launch, mika)
 
+    # Pictures, files and a link preview (stage 8), made here so no file has to ship with the app.
+    from . import files
+    from .models import LinkPreview
+    palette = by_text["Can someone check the new colour palette? It's in the shared folder."]
+    files.attach(s, palette, carlo, files.prepare("kalye-palette.png", palette_picture()))
+    checklist = s.scalar(select(Message).where(Message.conversation_id == launch.id,
+                                               Message.body.like("Thanks, both!%")))
+    files.attach(s, checklist, mika, files.prepare("launch-checklist.txt", CHECKLIST.encode()))
+    trail = say(s, hike, dana, "Trail info for Saturday: https://en.wikipedia.org/wiki/Mount_Batulao",
+                ago(moment, days=1, hours=7, minutes=20))
+    s.add(LinkPreview(message_id=trail.id, url="https://en.wikipedia.org/wiki/Mount_Batulao", site_name="Wikipedia",
+                      title="Mount Batulao", fetched_at=trail.created_at,
+                      description="Mount Batulao is a mountain in Batangas, Philippines, popular with hikers "
+                                  "for its rolling peaks and wide views."))
+    read_up_to(s, hike, mika)
+
     # Dana was here two hours ago: her chats say "Last seen 2 hours ago" until the crew brings her in.
     dana.last_seen_at = ago(moment, hours=2)
     for person in (ana, ben, carlo):
@@ -208,6 +224,33 @@ def sample_chats(s, team, people, moment):
 
 
 fillers.append(sample_chats)
+
+CHECKLIST = """Website launch checklist (Papel Studio)
+
+[x] Buy the domain
+[x] Choose hosting
+[ ] Photo shoot (Dana is booking the photographer)
+[ ] Write the About page
+[ ] Test on phones
+[ ] Launch!
+"""
+
+
+def palette_picture():
+    """Carlo's colour palette for Kalye Coffee: five swatches, drawn with Pillow (PNG bytes)."""
+    import io
+
+    from PIL import Image, ImageDraw
+    colours = ["#1d4e6b", "#2f80a8", "#f2c14e", "#e07a3f", "#f6efe3"]
+    picture = Image.new("RGB", (800, 420), "#ffffff")
+    draw = ImageDraw.Draw(picture)
+    width = 800 // len(colours)
+    for index, colour in enumerate(colours):
+        draw.rectangle([index * width, 0, (index + 1) * width, 330], fill=colour)
+        draw.text((index * width + 18, 360), colour.upper(), fill="#13263b")
+    out = io.BytesIO()
+    picture.save(out, "PNG")
+    return out.getvalue()
 
 
 def visitor(s, team_id):
