@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% from "_icons.html" import icon %}
+{% block title %}Join {{ conversation.title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="narrow top-gap-big">
+    <section class="card join-card">
+      <span class="avatar avatar-big group-avatar" aria-hidden="true">{{ icon('group', 30) }}</span>
+      <h1>{{ conversation.title }}</h1>
+      <p class="muted">{{ count }} member{{ 's' if count != 1 }}. {{ link.created_by.first_name if link.created_by else 'Someone' }} invited you.</p>
+      <form method="post" action="{{ url_for('groups.join', code=link.code) }}">
+        {{ csrf() }}
+        <button class="button button-block button-big" type="submit">Join group</button>
+      </form>
+    </section>
+  </div>
+{% endblock %}

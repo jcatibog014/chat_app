@@ -102,6 +102,11 @@ def read_up_to(s, conversation, person, seq=None):
     membership.last_read_seq = conversation.last_seq if seq is None else seq
 
 
+def chats_bump(s, conversation, moment):
+    from . import chats
+    return chats.bump(s, conversation, moment, new_message=True)
+
+
 def ago(moment, days=0, hours=0, minutes=0):
     return moment - timedelta(days=days, hours=hours, minutes=minutes)
 
@@ -173,6 +178,18 @@ def sample_chats(s, team, people, moment):
     oops = say(s, launch, carlo, "(sent to the wrong chat)", ago(moment, days=4, hours=1, minutes=40))
     oops.body, oops.deleted_at = "", oops.created_at + timedelta(minutes=1)
     say(s, launch, mika, "Thanks, both! I'll draft the launch checklist.", ago(moment, days=4, hours=1, minutes=30))
+
+    # Group admin (stage 7): Mika runs Launch Plans: Carlo is an admin, and there's an invite link.
+    from . import access
+    from .models import InviteLink, Membership
+    seq, version = chats_bump(s, launch, ago(moment, days=4, hours=1, minutes=20))
+    s.add(Message(conversation_id=launch.id, seq=seq, kind="system", body="Mika made Carlo an admin",
+                  created_at=ago(moment, days=4, hours=1, minutes=20), version=version))
+    s.scalar(select(Membership).where(Membership.conversation_id == launch.id,
+                                      Membership.user_id == carlo.id)).role = access.ADMIN
+    s.add(InviteLink(conversation_id=launch.id, code=f"demo{team.id}-{secrets.token_urlsafe(12)}",
+                     created_by_id=mika.id, created_at=ago(moment, days=2), expires_at=moment + timedelta(days=5),
+                     max_uses=10, uses=2))
     read_up_to(s, launch, mika)
 
     # Dana was here two hours ago: her chats say "Last seen 2 hours ago" until the crew brings her in.

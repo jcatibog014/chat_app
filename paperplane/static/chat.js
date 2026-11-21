@@ -352,6 +352,36 @@
     if (empty) empty.remove();
   });
 
+  // A group was renamed.
+  Live.on("conversation.updated", (data) => {
+    const row = rowOf(data.conversation_id);
+    if (row && data.title) row.querySelector(".chat-row-name").textContent = data.title;
+    if (data.conversation_id === openId && data.title) {
+      const heading = document.querySelector(".conversation-title h2");
+      if (heading) heading.textContent = data.title;
+    }
+  });
+
+  // I was removed, I left (in another tab), or the group was deleted: it leaves my list at once.
+  Live.on("conversation.removed", (data) => {
+    const row = rowOf(data.conversation_id);
+    if (row) {
+      if (!row.dataset.muted) setTotal(total - rowUnread(row));
+      row.remove();
+    }
+    if (data.conversation_id === openId) {
+      const words = { removed: "You were removed from this group.", deleted: "This group was deleted.",
+        left: "You left this group." };
+      if (typeof toast === "function") toast(words[data.why] || "This chat is no longer yours to see.", data.why !== "left");
+      setTimeout(() => (location.href = "/chats"), 1800);
+    }
+  });
+
+  // My role or mute changed, or a block opened or closed our DM: draw the chat again.
+  Live.on("membership.updated", (data) => {
+    if (data.conversation_id === openId) location.reload();
+  });
+
   Live.on("reconnected", resync);
 
   Live.on("status", (status) => {

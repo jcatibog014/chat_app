@@ -147,6 +147,8 @@ class Membership(Base):
     # Set when they leave or are removed. The row stays (their old messages keep a sender),
     # but access.py treats them as a stranger to the chat.
     removed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # A group's owner or admin muted them: they can read, but not send or react, until then.
+    muted_until: Mapped[datetime | None] = mapped_column(DateTime)
 
     conversation: Mapped[Conversation] = relationship(back_populates="memberships")
     user: Mapped[User] = relationship()
@@ -185,6 +187,39 @@ class Message(Base):
     sender: Mapped[User | None] = relationship()
     conversation: Mapped[Conversation] = relationship()
     reply_to: Mapped["Message | None"] = relationship(remote_side=[id])
+
+
+class InviteLink(Base):
+    """A link that lets anyone with it join a group (groups.join). It can expire, have a use
+    limit, and be turned off. The code is random (not signed), so turning it off really ends it."""
+    __tablename__ = "invite_links"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    code: Mapped[str] = mapped_column(String(40), unique=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    max_uses: Mapped[int | None] = mapped_column(Integer)
+    uses: Mapped[int] = mapped_column(Integer, default=0)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    conversation: Mapped[Conversation] = relationship()
+    created_by: Mapped[User | None] = relationship()
+
+
+class Block(Base):
+    """blocker doesn't want to hear from blocked: no messages in their DM, no new DM, no adding
+    them to groups, and neither sees the other online (blocks.py)."""
+    __tablename__ = "blocks"
+    __table_args__ = (UniqueConstraint("blocker_id", "blocked_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    blocker_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    blocked_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    blocked: Mapped[User] = relationship(foreign_keys=[blocked_id])
 
 
 class Reaction(Base):

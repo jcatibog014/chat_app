@@ -92,6 +92,9 @@ def demo_pages(app, client):
              "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"]}
     for chat in chats:
         pages[f"/chats/{chat.id}"] = ["msg-text"]
+        pages[f"/chats/{chat.id}/info"] = ["Group Info", "People", "Leave the Group"] if chat.is_group else ["Chat Info", "Block"]
+        if chat.title == "Launch Plans":  # Mika's own group: every control, an admin and a working invite link
+            pages[f"/chats/{chat.id}/info"] += ["Add People", "Invite Links", "2 of 10 used", "Admin", "Delete the Group"]
     return pages
 
 

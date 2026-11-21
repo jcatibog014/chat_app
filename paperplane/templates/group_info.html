@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar, csrf, field, switch %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ conversation.title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Group Info', back=url_for('chats.show', chat_id=conversation.id), back_label='Back to the chat') }}
+  <div class="info-grid">
+    <div class="info-main">
+      <section class="card group-card" id="about">
+        <div class="group-identity">
+          <span class="avatar avatar-big group-avatar" aria-hidden="true">{{ icon('group', 30) }}</span>
+          <div>
+            <h2>{{ conversation.title }}</h2>
+            <p class="muted">{{ members|length }} member{{ 's' if members|length != 1 }} · You are {{ 'the owner' if membership.role == 'owner' else ('an admin' if membership.role == 'admin' else 'a member') }}</p>
+          </div>
+        </div>
+        {% if can('rename') %}
+          <form method="post" action="{{ url_for('groups.rename', chat_id=conversation.id) }}" class="form-row top-gap" data-watch-changes>
+            {{ csrf() }}
+            {{ field('title', 'Group name', conversation.title, attrs='maxlength="80" required') }}
+            <button class="button" type="submit">Rename</button>
+          </form>
+        {% endif %}
+      </section>
+
+      <section class="card" id="people">
+        <div class="card-head"><h2>People</h2></div>
+        <ul class="member-list">
+          {% for m in members %}
+            {% set me = m.user_id == g.user.id %}
+            <li class="member-row">
+              {{ avatar(m.user, presence=presence_of(m.user)) }}
+              <div class="member-text">
+                <strong>{{ m.user.name }}{% if me %} <span class="muted">(you)</span>{% endif %}</strong>
+                <small>@{{ m.user.handle }}</small>
+              </div>
+              <div class="member-tags">
+                {% if m.role != 'member' %}<span class="role-pill role-{{ m.role }}">{{ role_names[m.role] }}</span>{% endif %}
+                {% if is_muted(m, moment) %}<span class="role-pill role-muted" title="Muted until {{ m.muted_until|clock }}">Muted until {{ m.muted_until|short_when }}</span>{% endif %}
+              </div>
+              {% if not me and (can('change_roles', m) or can('remove_people', m) or can('mute_member', m)) %}
+                <details class="member-menu" data-popover>
+                  <summary class="icon-button icon-button-small" title="Options for {{ m.user.first_name }}">{{ icon('more', 18) }}<span class="visually-hidden">Options for {{ m.user.name }}</span></summary>
+                  <div class="member-menu-items">
+                    {% if can('change_roles', m) %}
+                      <form method="post" action="{{ url_for('groups.role', chat_id=conversation.id, user_id=m.user_id) }}">
+                        {{ csrf() }}
+                        <input type="hidden" name="role" value="{{ 'member' if m.role == 'admin' else 'admin' }}">
+                        <button class="menu-item" type="submit">{{ icon('shield', 16) }} {{ 'Make member' if m.role == 'admin' else 'Make admin' }}</button>
+                      </form>
+                      <form method="post" action="{{ url_for('groups.owner', chat_id=conversation.id, user_id=m.user_id) }}"
+                            data-confirm="Make {{ m.user.first_name }} the owner? You will become an admin.">
+                        {{ csrf() }}
+                        <button class="menu-item" type="submit">{{ icon('crown', 16) }} Make owner</button>
+                      </form>
+                    {% endif %}
+                    {% if can('mute_member', m) %}
+                      {% if is_muted(m, moment) %}
+                        <form method="post" action="{{ url_for('groups.mute', chat_id=conversation.id, user_id=m.user_id) }}">
+                          {{ csrf() }}
+                          <input type="hidden" name="minutes" value="off">
+                          <button class="menu-item" type="submit">{{ icon('bell', 16) }} Unmute</button>
+                        </form>
+                      {% else %}
+                        {% for minutes, (words, _length) in MUTE_CHOICES.items() %}
+                          <form method="post" action="{{ url_for('groups.mute', chat_id=conversation.id, user_id=m.user_id) }}">
+                            {{ csrf() }}
+                            <input type="hidden" name="minutes" value="{{ minutes }}">
+                            <button class="menu-item" type="submit">{{ icon('bell-off', 16) }} Mute for {{ words }}</button>
+                          </form>
+                        {% endfor %}
+                      {% endif %}
+                    {% endif %}
+                    {% if can('remove_people', m) %}
+                      <form method="post" action="{{ url_for('groups.remove', chat_id=conversation.id, user_id=m.user_id) }}"
+                            data-confirm="Remove {{ m.user.first_name }} from {{ conversation.title }}?">
+                        {{ csrf() }}
+                        <button class="menu-item menu-danger button-danger" type="submit">{{ icon('leave', 16) }} Remove from group</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </details>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+
+    <div class="info-side">
+      {% if can('add_people') %}
+      <section class="card" id="add">
+        <h2>Add People</h2>
+        <form method="post" action="{{ url_for('groups.add', chat_id=conversation.id) }}" class="stack top-gap">
+          {{ csrf() }}
+          {% if addable %}
+            <fieldset class="pick-people">
+              <legend class="field-label">People you know</legend>
+              {% for person in addable %}
+                <label class="check person-check">
+                  <input type="checkbox" name="person" value="{{ person.id }}">
+                  {{ avatar(person, 'small') }} <span>{{ person.name }} <span class="hint">@{{ person.handle }}</span></span>
+                </label>
+              {% endfor %}
+            </fieldset>
+          {% endif %}
+          {{ field('usernames', 'Add by username', '', note='Usernames, with spaces or commas between them.', attrs='autocapitalize="none" spellcheck="false" placeholder="ana, ben"') }}
+          <div class="form-actions start"><button class="button" type="submit">{{ icon('plus', 18) }} Add to group</button></div>
+        </form>
+      </section>
+      {% endif %}
+
+      {% if can('invite_links') %}
+      <section class="card" id="invites">
+        <h2>Invite Links</h2>
+        <p class="muted card-note">Anyone with a link can join. Turn a link off to stop it at once.</p>
+        {% if invites %}
+          <ul class="invite-list">
+            {% for link in invites %}
+              <li>
+                <div class="copy-row">
+                  <input type="text" id="invite-{{ link.id }}" value="{{ url_for('groups.join_page', code=link.code, _external=True) }}" readonly aria-label="Invite link">
+                  <button class="button button-quiet button-small" type="button" data-copy="invite-{{ link.id }}" hidden>Copy</button>
+                </div>
+                <div class="invite-facts">
+                  <span>{% if link.max_uses %}{{ link.uses }} of {{ link.max_uses }} used{% else %}Used {{ link.uses }} time{{ 's' if link.uses != 1 }}{% endif %}</span>
+                  <span>{% if link.expires_at %}Works until {{ link.expires_at|short_when }}{% else %}Never expires{% endif %}</span>
+                  <form method="post" action="{{ url_for('groups.revoke_invite', chat_id=conversation.id, invite_id=link.id) }}"
+                        data-confirm="Turn this invite link off? People who already joined stay in the group.">
+                    {{ csrf() }}
+                    <button class="link-button" type="submit">Turn off</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <form method="post" action="{{ url_for('groups.create_invite', chat_id=conversation.id) }}" class="form-row invite-form">
+          {{ csrf() }}
+          <label class="field">
+            <span class="field-label"><span>Works for</span></span>
+            <select name="expiry"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="never">Always</option></select>
+          </label>
+          <label class="field">
+            <span class="field-label"><span>Can be used</span></span>
+            <select name="uses"><option value="1">Once</option><option value="10" selected>10 times</option><option value="unlimited">Any number of times</option></select>
+          </label>
+          <button class="button" type="submit">{{ icon('link', 18) }} Make link</button>
+        </form>
+      </section>
+      {% endif %}
+
+      {% if can('change_settings') %}
+      <section class="card" id="settings">
+        <h2>Group Settings</h2>
+        <div class="setting-row first">
+          <div>
+            <h3>New Members See Earlier Messages</h3>
+            <p class="muted small">Turned off, people who join see only what is said after they join.</p>
+          </div>
+          <form method="post" action="{{ url_for('groups.history', chat_id=conversation.id) }}" class="switch-form">
+            {{ csrf() }}
+            {{ switch('history_visible', conversation.history_visible, 'New members see earlier messages') }}
+          </form>
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="card" id="leave">
+        <h2>Leave{% if can('delete_group') %} or Delete{% endif %}</h2>
+        <div class="setting-row first">
+          <div>
+            <h3>Leave the Group</h3>
+            <p class="muted small">{% if membership.role == 'owner' %}An admin (or the longest member) becomes the owner.{% else %}You can come back if someone adds you.{% endif %}</p>
+          </div>
+          <form method="post" action="{{ url_for('groups.leave', chat_id=conversation.id) }}" data-confirm="Leave {{ conversation.title }}?">
+            {{ csrf() }}
+            <button class="button button-quiet" type="submit">{{ icon('leave', 18) }} Leave group</button>
+          </form>
+        </div>
+        {% if can('delete_group') %}
+        <div class="setting-row">
+          <div>
+            <h3>Delete the Group</h3>
+            <p class="muted small">For everyone, with all its messages. This can't be undone.</p>
+          </div>
+          <form method="post" action="{{ url_for('groups.delete', chat_id=conversation.id) }}" data-confirm="Delete {{ conversation.title }} for everyone? All its messages go too.">
+            {{ csrf() }}
+            <button class="button button-danger" type="submit">{{ icon('trash', 18) }} Delete group</button>
+          </form>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+{% endblock %}

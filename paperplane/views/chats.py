@@ -10,7 +10,7 @@ from .. import access, chats, db, tools
 from ..auth import login_required
 from ..dates import utcnow
 from ..models import User
-from ..problems import Invalid, NotFound, Problem
+from ..problems import Forbidden, Invalid, NotFound, Problem
 
 bp = Blueprint("chats", __name__)
 
@@ -61,15 +61,33 @@ def show(chat_id):
             replying = target
         except Problem:
             replying = None
+    flags = chats.speaking_flags(s, conversation, membership, g.user, utcnow())
     return render_template(
-        "chats.html", **page_data(s, conversation.id),
+        "chats.html", **page_data(s, conversation.id), cant_send_reason=cant_send_reason(s, conversation, membership, flags),
         conversation=conversation, membership=membership, messages=messages, more=more, before=before,
         members=members, title=chats.title_for(s, conversation, g.user.id),
         other=chats.other_person(s, conversation, g.user.id) if conversation.is_dm else None,
         client_id=chats.new_client_id(), replying=replying,
         seen=tools.seen_words(conversation, readers, last, g.user.id),
         readers={str(user_id): {"name": name, "seq": seq} for user_id, (name, seq) in readers.items()},
-        can=lambda action, target=None: access.can(action, conversation, membership, target))
+        can=lambda action, target=None: access.can(action, conversation, membership, target,
+                                                   **(flags if action in access.SPEAKING else {})))
+
+
+def cant_send_reason(s, conversation, membership, flags):
+    """What the closed composer says, when you can't send here right now."""
+    from .. import blocks
+    from ..formatting import clock, short_when
+    if flags.get("muted"):
+        until = membership.muted_until
+        when = clock(until) if short_when(until) == clock(until) else f"{short_when(until)}, {clock(until)}"
+        return f"An admin muted you in this group until {when}. You can still read."
+    if flags.get("blocked"):
+        other = chats.other_person(s, conversation, g.user.id)
+        if other is not None and blocks.i_blocked(s, g.user.id, other.id):
+            return f"You blocked {other.first_name}. Unblock them in Chat Info to send messages."
+        return "You can't reply to this chat."
+    return "You can't send messages here right now."
 
 
 @bp.post("/chats/<int:chat_id>/send")
@@ -142,7 +160,7 @@ def new_group():
             conversation = chats.create_group(s, g.user, request.form.get("title"), people, utcnow())
         except Invalid as problem:
             errors["title"] = problem.message
-        except NotFound as problem:
+        except (NotFound, Forbidden) as problem:
             errors["usernames"] = problem.message
     if errors:
         s.rollback()

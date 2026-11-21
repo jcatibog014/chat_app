@@ -192,10 +192,18 @@ def get(app):
 
 
 def status_for_page(viewer, person):
-    """The dot a page draws for `person`: their status if they share it, else offline."""
-    from flask import current_app
+    """The dot a page draws for `person`: their status if they share it (and there's no block
+    between them and the person looking), else offline."""
+    from flask import current_app, g, has_app_context
     if person is None or not person.show_presence:
         return OFFLINE
+    viewer = viewer or (g.get("user") if has_app_context() else None)
+    if viewer is not None:
+        if "presence_hidden" not in g:
+            from . import blocks
+            g.presence_hidden = blocks.hidden_ids(db.session(), viewer.id)
+        if person.id in g.presence_hidden:
+            return OFFLINE
     tracker = current_app.extensions.get(KEY)
     return tracker.of(person.id) if tracker else OFFLINE
 

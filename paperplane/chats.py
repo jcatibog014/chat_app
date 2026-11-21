@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from . import access, outbox
 from .dates import iso
 from .models import Conversation, Membership, Message, User
-from .problems import Invalid, NotFound
+from .problems import Forbidden, Invalid, NotFound
 
 BODY_MAX_LENGTH = 4000
 TITLE_MAX_LENGTH = 80
@@ -192,6 +192,8 @@ def start_dm(s, me, other, moment):
     """The DM between me and other: the one that exists, or a new one. Returns (chat, made_now)."""
     if other is None or other.id == me.id or not access.same_world(me, other):
         raise NotFound("We couldn't find anyone with that username.")
+    from . import blocks
+    blocks.check_can_start(s, me, other)
     key = dm_key(me.id, other.id)
     existing = s.scalar(select(Conversation).where(Conversation.dm_key == key))
     if existing is not None:
@@ -219,9 +221,12 @@ def create_group(s, me, title, others, moment):
     """A new group with me as its owner and these people as members."""
     title = clean_title(title)
     people = {person.id: person for person in others if person.id != me.id}
+    from . import blocks
     for person in people.values():
         if not access.same_world(me, person):
             raise NotFound("We couldn't find one of those people.")
+        if blocks.between(s, me.id, person.id):
+            raise Forbidden(f"You can't add {person.name}.")
     if len(people) + 1 > GROUP_MAX_PEOPLE:
         raise Invalid(f"A group can have at most {GROUP_MAX_PEOPLE} people.")
     conversation = Conversation(kind="group", title=title, created_by_id=me.id, created_at=moment,
@@ -292,13 +297,18 @@ after_send_hooks = []
 speaking_checks = []
 
 
-def require_speaking(action, s, conversation, membership, me, moment):
-    """access.require for "send" and "react", with the flags later stages add."""
+def speaking_flags(s, conversation, membership, me, moment):
+    """{"muted": ..., "blocked": ...}: why someone may not speak right now (access.can's flags)."""
     flags = {}
     for check in speaking_checks:
         for flag, value in check(s, conversation, membership, me, moment).items():
             flags[flag] = flags.get(flag, False) or value
-    access.require(action, conversation, membership, **flags)
+    return flags
+
+
+def require_speaking(action, s, conversation, membership, me, moment):
+    """access.require for "send" and "react", with the flags later stages add."""
+    access.require(action, conversation, membership, **speaking_flags(s, conversation, membership, me, moment))
 
 
 def after_send(s, conversation, message, moment):
