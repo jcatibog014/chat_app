@@ -179,6 +179,21 @@ class Message(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
     # The conversation's version when this message last changed (catch-up after a reconnect).
     version: Mapped[int] = mapped_column(Integer, default=0)
+    # The message this one answers (stage 6). Always in the same chat (tools.reply_target).
+    reply_to_id: Mapped[int | None] = mapped_column(ForeignKey("messages.id", ondelete="SET NULL"), index=True)
 
     sender: Mapped[User | None] = relationship()
     conversation: Mapped[Conversation] = relationship()
+    reply_to: Mapped["Message | None"] = relationship(remote_side=[id])
+
+
+class Reaction(Base):
+    """One person's emoji on one message. Pressing it again takes it back."""
+    __tablename__ = "reactions"
+    __table_args__ = (UniqueConstraint("message_id", "user_id", "emoji"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    emoji: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

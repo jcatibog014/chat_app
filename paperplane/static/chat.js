@@ -115,6 +115,8 @@
         && dayKeyFormat.format(new Date(el.dataset.at)) === dayKeyFormat.format(new Date(before.dataset.at))) {
       el.classList.add("follows");
     }
+    addTokens(el);
+    markMyReactions(el);
     localize(el);
   }
 
@@ -134,6 +136,7 @@
     decorate(el, before);
     el.classList.add("is-new");
     messages.insertBefore(el, messages.querySelector(".latest-anchor"));
+    drawSeen();
   }
 
   function showMessage(m) {
@@ -147,6 +150,7 @@
       if (existing.classList.contains("follows")) fresh.classList.add("follows");
       decorate(fresh, null);
       existing.replaceWith(fresh);
+      drawSeen();
       return;
     }
     const waiting = m.client_id && messages.querySelector(`[data-client-id="${m.client_id}"]`);
@@ -155,6 +159,7 @@
         ? waiting.previousElementSibling : null;
       decorate(fresh, before);
       waiting.replaceWith(fresh);
+      drawSeen();
       return;
     }
     append(fresh);
@@ -202,11 +207,13 @@
     return li;
   }
 
-  function sendMessage(text, clientId, el) {
+  function sendMessage(text, clientId, el, replyTo) {
     el.classList.remove("is-failed");
     el.classList.add("is-pending");
     el.querySelector(".msg-meta").textContent = "Sending...";
-    Live.request("message.send", { conversation_id: openId, body: text, client_id: clientId })
+    const data = { conversation_id: openId, body: text, client_id: clientId };
+    if (replyTo) data.reply_to = replyTo;
+    Live.request("message.send", data)
       .then((ack) => {
         const m = ack.message;
         readSeq = Math.max(readSeq, m.seq);
@@ -221,7 +228,7 @@
         el.classList.add("is-failed");
         el.querySelector(".msg-meta").textContent = "Not sent. Tap to try again.";
         if (typeof toast === "function" && error && error.message) toast(error.message, true);
-        el.addEventListener("click", () => sendMessage(text, clientId, el), { once: true });
+        el.addEventListener("click", () => sendMessage(text, clientId, el, replyTo), { once: true });
       });
   }
 
@@ -246,12 +253,14 @@
       const text = area.value.trim();
       if (!text) return;
       const clientId = newId();
+      const replyTo = replyInput && Number(replyInput.value) ? Number(replyInput.value) : null;
       const el = pendingBubble(text, clientId);
       append(el);
       area.value = "";
       fit();
+      setReply(null);
       if (scroller) scroller.scrollTop = 0;
-      sendMessage(text, clientId, el);
+      sendMessage(text, clientId, el, replyTo);
       document.dispatchEvent(new CustomEvent("paperplane:sent"));
     });
   }
@@ -308,10 +317,25 @@
     document.dispatchEvent(new CustomEvent("paperplane:message", { detail: m }));
   });
 
-  Live.on("message.updated", showMessage);
+  Live.on("message.updated", (m) => {
+    showMessage(m);
+    const row = rowOf(m.conversation_id);
+    if (row && Number(row.dataset.lastSeq) === m.seq) {
+      const mine = m.sender_id === me;
+      const prefix = mine ? "You: " : row.dataset.kind === "group" && m.sender_first ? `${m.sender_first}: ` : "";
+      row.querySelector("[data-preview]").textContent = prefix + m.preview;
+    }
+  });
 
   Live.on("read", (data) => {
-    if (data.user_id !== me) return; // someone else read it: "Seen by" (stage 6)
+    if (data.user_id !== me) {
+      if (data.conversation_id === openId) {
+        const reader = readers[String(data.user_id)];
+        if (reader) reader.seq = Math.max(reader.seq, data.seq);
+        drawSeen();
+      }
+      return;
+    }
     const row = rowOf(data.conversation_id);
     if (row) setRowUnread(row, Math.max(0, Number(row.dataset.lastSeq || 0) - data.seq));
     if (data.conversation_id === openId) readSeq = Math.max(readSeq, data.seq);
@@ -343,6 +367,174 @@
   document.addEventListener("visibilitychange", () => {
     if (reading()) markRead(lastSeq);
   });
+
+  // ---------- Message tools: reply, edit, delete, react, "Seen by" ----------
+
+  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  const csrfToken = csrfMeta ? csrfMeta.content : "";
+
+  // Live messages come without a CSRF token in their forms (it would be the sender's): add ours.
+  function addTokens(root) {
+    root.querySelectorAll('form[method="post"]').forEach((form) => {
+      if (form.querySelector('input[name="csrf_token"]')) return;
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "csrf_token";
+      input.value = csrfToken;
+      form.prepend(input);
+    });
+  }
+
+  function markMyReactions(root) {
+    root.querySelectorAll(".reaction[data-users]").forEach((chip) => {
+      chip.classList.toggle("is-mine", chip.dataset.users.split(",").map(Number).includes(me));
+    });
+  }
+
+  const readers = conversation && conversation.dataset.readers ? JSON.parse(conversation.dataset.readers) : {};
+  const seenLine = document.querySelector("[data-seen-line]");
+
+  // Under my last message: "Seen" in a DM, "Seen by Ana and Ben" or "Seen by everyone" in a group.
+  function drawSeen() {
+    if (!seenLine || !messages) return;
+    const last = lastMessageEl();
+    let text = "";
+    if (last && !last.classList.contains("msg-system") && !last.classList.contains("is-pending")
+        && Number(last.dataset.sender) === me) {
+      const seq = Number(last.dataset.seq);
+      const others = Object.entries(readers).filter(([id]) => Number(id) !== me);
+      const seen = others.filter(([, reader]) => reader.seq >= seq).map(([, reader]) => reader.name);
+      if (seen.length) {
+        if (conversation.dataset.kind === "dm") text = "Seen";
+        else if (seen.length === others.length && others.length > 1) text = "Seen by everyone";
+        else if (seen.length === 1) text = `Seen by ${seen[0]}`;
+        else text = `Seen by ${seen.slice(0, -1).join(", ")} and ${seen[seen.length - 1]}`;
+      }
+    }
+    seenLine.textContent = text;
+    seenLine.hidden = !text;
+    messages.insertBefore(seenLine, messages.querySelector(".latest-anchor"));
+  }
+
+  const replyBanner = document.querySelector("[data-reply-banner]");
+  const replyInput = document.querySelector("[data-reply-to]");
+
+  function setReply(id, name, snippet) {
+    if (!replyBanner || !replyInput) return;
+    replyInput.value = id || "";
+    if (id) {
+      replyBanner.querySelector("[data-reply-name]").textContent = name || "";
+      replyBanner.querySelector("[data-reply-snippet]").textContent = snippet || "";
+    }
+    replyBanner.hidden = !id;
+  }
+
+  const showError = (error) => {
+    if (typeof toast === "function") toast((error && error.message) || "That didn't work. Please try again.", true);
+  };
+
+  const closeMenus = (root) => root.querySelectorAll("details[open]").forEach((menu) => (menu.open = false));
+
+  function startEdit(li) {
+    const textEl = li.querySelector("[data-text]");
+    if (!textEl || li.querySelector(".edit-box")) return;
+    const box = document.createElement("form");
+    box.className = "edit-box";
+    const field = document.createElement("textarea");
+    field.value = textEl.textContent;
+    field.maxLength = 4000;
+    field.setAttribute("aria-label", "Edit your message");
+    const actions = document.createElement("div");
+    actions.className = "form-actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "button button-quiet button-small";
+    cancel.textContent = "Cancel";
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.className = "button button-small";
+    save.textContent = "Save";
+    actions.append(cancel, save);
+    box.append(field, actions);
+    textEl.hidden = true;
+    textEl.after(box);
+    field.focus();
+    const stop = () => {
+      box.remove();
+      textEl.hidden = false;
+    };
+    cancel.addEventListener("click", stop);
+    field.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") stop();
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        box.requestSubmit();
+      }
+    });
+    box.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const body = field.value.trim();
+      if (!body) return;
+      save.disabled = true;
+      Live.request("message.edit", { message_id: Number(li.dataset.id), body }, { timeout: 15000 })
+        .catch((error) => {
+          save.disabled = false;
+          showError(error);
+        }); // message.updated draws the edited message for everyone, this tab too
+    });
+  }
+
+  function setUpTools() {
+    if (!messages) return;
+    // Forms in a message (reactions, delete): over the socket instead of a page load. The
+    // delete form asks first (app.js); its first submit is stopped there, the approved one comes here.
+    document.addEventListener("submit", (event) => {
+      const form = event.target;
+      if (event.defaultPrevented || !form.dataset || !form.dataset.tool || !messages.contains(form)) return;
+      event.preventDefault();
+      const li = form.closest(".msg");
+      closeMenus(li);
+      const id = Number(li.dataset.id);
+      if (form.dataset.tool === "react") {
+        const emoji = form.querySelector('input[name="emoji"]').value;
+        Live.request("message.react", { message_id: id, emoji }, { timeout: 15000 }).catch(showError);
+      } else if (form.dataset.tool === "delete") {
+        Live.request("message.delete", { message_id: id }, { timeout: 15000 }).catch(showError);
+      }
+    });
+    messages.addEventListener("click", (event) => {
+      const tool = event.target.closest("a[data-tool]");
+      if (tool) {
+        event.preventDefault();
+        const li = tool.closest(".msg");
+        closeMenus(li);
+        if (tool.dataset.tool === "reply") {
+          setReply(li.dataset.id, tool.dataset.replyName, tool.dataset.replySnippet);
+          const area = document.querySelector("[data-composer-text]");
+          if (area) area.focus();
+        } else if (tool.dataset.tool === "edit") {
+          startEdit(li);
+        }
+        return;
+      }
+      const quote = event.target.closest("[data-jump]");
+      if (quote) {
+        const target = document.getElementById(`m-${quote.dataset.jump}`);
+        if (!target) return; // an older message: the link loads it
+        event.preventDefault();
+        target.scrollIntoView({ block: "center", behavior: "smooth" });
+        target.classList.add("is-flash");
+        setTimeout(() => target.classList.remove("is-flash"), 1600);
+      }
+    });
+    const cancel = document.querySelector("[data-reply-cancel]");
+    if (cancel) {
+      cancel.addEventListener("click", (event) => {
+        event.preventDefault();
+        setReply(null);
+      });
+    }
+  }
 
   // ---------- Presence: the dots, and the line under a DM's name ----------
 
@@ -446,6 +638,8 @@
     if (messages) localize(messages);
     setUpComposer();
     setUpTypingSignal();
+    setUpTools();
+    if (messages) markMyReactions(messages);
     if (scroller) {
       scroller.addEventListener("scroll", () => {
         if (reading()) markRead(lastSeq);

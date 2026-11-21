@@ -15,6 +15,8 @@
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
   {% if g.user %}
+  {# Live message forms come without a token (it would be the sender's): chat.js adds this one. #}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   {# The live connection, on every page you see logged in: new messages, counts, presence. #}
   <script src="{{ url_for('static', filename='socket.js') }}" defer></script>
   <script src="{{ url_for('static', filename='chat.js') }}" defer></script>

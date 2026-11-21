@@ -129,6 +129,11 @@ def message_data(m):
     the server (the same template as the page, so live and reloaded messages look the same;
     the browser marks your own ones). The HTML is escaped by Jinja: nothing anyone types
     becomes markup."""
+    from . import tools
+    from sqlalchemy.orm import object_session
+    session = object_session(m)
+    if session is not None and not hasattr(m, "reaction_list"):
+        tools.prepare(session, [m])
     sender = m.sender
     return {
         "id": m.id,
@@ -146,6 +151,8 @@ def message_data(m):
         "created_at": iso(m.created_at),
         "edited": m.edited_at is not None,
         "deleted": m.deleted_at is not None,
+        "reply_to_id": m.reply_to_id,
+        "reactions": getattr(m, "reaction_list", []),
         "html": render_fragment("_message_live.html", m=m),
     }
 
@@ -240,7 +247,7 @@ def announce_new_chat(s, conversation, user_ids):
 
 # ---------- Sending ----------
 
-def send_message(s, me, conversation_id, body, client_id, moment):
+def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=None):
     """Save a message and send it to every member. Returns (message, was_already_sent).
 
     The same client_id twice (a reconnect re-sending, a double click) gives back the
@@ -252,9 +259,12 @@ def send_message(s, me, conversation_id, body, client_id, moment):
         return earlier, True
     conversation, membership = access.load(s, me, conversation_id, lock=True)
     require_speaking("send", s, conversation, membership, me, moment)
+    from . import tools
+    target = tools.reply_target(s, me, conversation, membership, reply_to_id)
     seq, version = bump(s, conversation, moment, new_message=True)
     message = Message(conversation_id=conversation.id, seq=seq, sender_id=me.id, client_id=client_id,
-                      kind="text", body=body, created_at=moment, version=version)
+                      kind="text", body=body, created_at=moment, version=version,
+                      reply_to_id=target.id if target else None)
     try:
         with s.begin_nested():
             s.add(message)

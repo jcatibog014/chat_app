@@ -6,7 +6,7 @@ over the WebSocket instead, and these pages are only loaded once.
 """
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
-from .. import access, chats, db
+from .. import access, chats, db, tools
 from ..auth import login_required
 from ..dates import utcnow
 from ..models import User
@@ -50,12 +50,25 @@ def show(chat_id):
         chats.mark_read(s, g.user, conversation.id)
         s.commit()
     members = chats.members(s, conversation)
+    tools.prepare(s, messages)
+    readers = tools.readers(s, conversation)
+    last = messages[-1] if messages and before is None else None
+    replying = None
+    if request.args.get("reply", type=int):
+        try:
+            target = tools.reply_target(s, g.user, conversation, membership, request.args.get("reply", type=int))
+            tools.prepare(s, [target])
+            replying = target
+        except Problem:
+            replying = None
     return render_template(
         "chats.html", **page_data(s, conversation.id),
         conversation=conversation, membership=membership, messages=messages, more=more, before=before,
         members=members, title=chats.title_for(s, conversation, g.user.id),
         other=chats.other_person(s, conversation, g.user.id) if conversation.is_dm else None,
-        client_id=chats.new_client_id(),
+        client_id=chats.new_client_id(), replying=replying,
+        seen=tools.seen_words(conversation, readers, last, g.user.id),
+        readers={str(user_id): {"name": name, "seq": seq} for user_id, (name, seq) in readers.items()},
         can=lambda action, target=None: access.can(action, conversation, membership, target))
 
 
@@ -64,7 +77,8 @@ def show(chat_id):
 def send(chat_id):
     s = db.session()
     try:
-        chats.send_message(s, g.user, chat_id, request.form.get("body"), request.form.get("client_id"), utcnow())
+        chats.send_message(s, g.user, chat_id, request.form.get("body"), request.form.get("client_id"), utcnow(),
+                           reply_to_id=request.form.get("reply_to", type=int))
     except Invalid as problem:
         s.rollback()
         flash(problem.message, "error")

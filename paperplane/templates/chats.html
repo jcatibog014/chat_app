@@ -31,7 +31,8 @@
   {% if conversation %}
   <section class="conversation" aria-label="{{ title }}" data-conversation="{{ conversation.id }}"
            data-kind="{{ conversation.kind }}" data-version="{{ conversation.version }}" data-role="{{ membership.role }}"
-           data-last-seq="{{ conversation.last_seq }}" data-read-seq="{{ membership.last_read_seq }}">
+           data-last-seq="{{ conversation.last_seq }}" data-read-seq="{{ membership.last_read_seq }}"
+           data-readers='{{ readers|tojson }}'>
     <header class="conversation-head">
       <a class="icon-button back-to-list" href="{{ url_for('chats.index') }}" title="All chats">{{ icon('back', 20) }}<span class="visually-hidden">All chats</span></a>
       {% if other %}{{ avatar(other, presence=presence_of(other) if presence_of is defined else None) }}{% else %}<span class="avatar group-avatar" aria-hidden="true">{{ icon('group', 20) }}</span>{% endif %}
@@ -64,6 +65,7 @@
           {% if new_day %}{{ day_break(m.created_at) }}{% endif %}
           {{ message(m, g.user.id, follows) }}
         {% endfor %}
+        <li class="seen-line" data-seen-line{% if not seen %} hidden{% endif %}>{{ seen }}</li>
         <li id="latest" class="latest-anchor" aria-hidden="true"></li>
       </ol>
     </div>
@@ -72,9 +74,16 @@
       <p class="typing" data-typing aria-live="polite"></p>
       <p class="connection-note" data-connection hidden></p>
       {% if can('send') %}
-      <form class="composer" method="post" action="{{ url_for('chats.send', chat_id=conversation.id) }}" data-composer>
+      <div class="reply-banner" data-reply-banner{% if not replying %} hidden{% endif %}>
+        {{ icon('reply', 16) }}
+        <span>Replying to <strong data-reply-name>{{ replying.sender.first_name if replying else '' }}</strong>:
+          <span data-reply-snippet>{{ replying.body|truncate(80, True, '...') if replying else '' }}</span></span>
+        <a class="icon-button icon-button-small" href="{{ url_for('chats.show', chat_id=conversation.id) }}" data-reply-cancel title="Cancel reply">{{ icon('x', 16) }}<span class="visually-hidden">Cancel reply</span></a>
+      </div>
+      <form class="composer" id="composer" method="post" action="{{ url_for('chats.send', chat_id=conversation.id) }}" data-composer>
         {{ csrf() }}
         <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="reply_to" value="{{ replying.id if replying else '' }}" data-reply-to>
         <label class="visually-hidden" for="composer-text">Message</label>
         <textarea id="composer-text" name="body" rows="1" maxlength="4000" placeholder="Write a message" required data-composer-text></textarea>
         <button class="send-button" type="submit" title="Send">{{ icon('send', 20) }}<span class="visually-hidden">Send</span></button>

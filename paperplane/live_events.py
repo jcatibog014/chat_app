@@ -1,20 +1,25 @@
 """What the browser can ask over the WebSocket. Each handler is small: it calls
 the same domain functions as the pages (chats.py), which check the rules.
 
-    message.send  {conversation_id, body, client_id}   -> ack {message}
+    message.send  {conversation_id, body, client_id, reply_to?} -> ack {message}
+    message.edit  {message_id, body}                   -> ack {message}
+    message.delete {message_id}                        -> ack {message}
+    message.react {message_id, emoji}                  -> ack {added}
+    presence      {visible}                            -> ack {}
+    typing        {conversation_id}                    -> ack {}
     read          {conversation_id, seq}               -> ack {}
     sync          {open: {conversation_id, version}}   -> ack {list_html, total_unread, changes, version, reload}
 """
-from . import access, chats, outbox, presence
+from . import access, chats, outbox, presence, tools
 from .chats import BODY_MAX_LENGTH, render_fragment
 from .events import on
 
 
 @on("message.send", limit=(20, 10), conversation_id=(int, True), body=(str, True, BODY_MAX_LENGTH + 100),
-    client_id=(str, True, 40))
+    client_id=(str, True, 40), reply_to=(int, False))
 def send(ctx, data):
     message, duplicate = chats.send_message(ctx.s, ctx.user, data["conversation_id"], data["body"],
-                                            data["client_id"], ctx.now)
+                                            data["client_id"], ctx.now, reply_to_id=data["reply_to"])
     # The ack carries the message too: when it was a duplicate, nothing new was broadcast,
     # and this tab still needs the saved copy to replace its "sending..." bubble.
     return {"message": chats.message_data(message), "duplicate": duplicate}
@@ -24,6 +29,24 @@ def send(ctx, data):
 def read(ctx, data):
     chats.mark_read(ctx.s, ctx.user, data["conversation_id"], data["seq"])
     return {}
+
+
+@on("message.edit", limit=(20, 10), message_id=(int, True), body=(str, True, BODY_MAX_LENGTH + 100))
+def edit(ctx, data):
+    message = tools.edit_message(ctx.s, ctx.user, data["message_id"], data["body"], ctx.now)
+    return {"message": chats.message_data(message)}
+
+
+@on("message.delete", limit=(20, 10), message_id=(int, True))
+def remove(ctx, data):
+    message = tools.delete_message(ctx.s, ctx.user, data["message_id"], ctx.now)
+    return {"message": chats.message_data(message)}
+
+
+@on("message.react", limit=(30, 10), message_id=(int, True), emoji=(str, True, 16))
+def react(ctx, data):
+    added = tools.react(ctx.s, ctx.user, data["message_id"], data["emoji"], ctx.now)
+    return {"added": added}
 
 
 @on("presence", limit=(30, 10), visible=(bool, True))

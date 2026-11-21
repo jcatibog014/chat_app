@@ -156,6 +156,25 @@ def sample_chats(s, team, people, moment):
     say(s, launch, dana, "I can book the photographer.", ago(moment, days=4, hours=1, minutes=45))
     read_up_to(s, launch, mika)
 
+    # Message tools (stage 6): reactions, a reply, an edited and a deleted message.
+    from .models import Message, Reaction
+    by_text = {m.body: m for m in s.scalars(select(Message).where(Message.conversation_id.in_(
+        [studio.id, launch.id, hike.id])))}
+    lunch = by_text["Reminder: lunch is on me today. Pancit from the corner shop!"]
+    for person, emoji in ((ana, "❤️"), (ben, "❤️"), (mika, "❤️"), (carlo, "🎉")):
+        s.add(Reaction(message_id=lunch.id, user_id=person.id, emoji=emoji, created_at=lunch.created_at))
+    s.add(Reaction(message_id=by_text["Turn it off and on again. Works every time."].id, user_id=ben.id,
+                   emoji="😂", created_at=moment))
+    s.add(Reaction(message_id=by_text["Count me in too."].id, user_id=ben.id, emoji="👍", created_at=moment))
+    by_text["Looks great, Carlo. That blue is perfect for the cups."].reply_to_id = \
+        by_text["Can someone check the new colour palette? It's in the shared folder."].id
+    review = by_text["Thursday's review moved to 3 PM. Is everyone okay with that?"]
+    review.edited_at = review.created_at + timedelta(minutes=1)
+    oops = say(s, launch, carlo, "(sent to the wrong chat)", ago(moment, days=4, hours=1, minutes=40))
+    oops.body, oops.deleted_at = "", oops.created_at + timedelta(minutes=1)
+    say(s, launch, mika, "Thanks, both! I'll draft the launch checklist.", ago(moment, days=4, hours=1, minutes=30))
+    read_up_to(s, launch, mika)
+
     # Dana was here two hours ago: her chats say "Last seen 2 hours ago" until the crew brings her in.
     dana.last_seen_at = ago(moment, hours=2)
     for person in (ana, ben, carlo):
