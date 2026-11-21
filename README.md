@@ -2,11 +2,133 @@
 
 **Send it flying.** A chat app where messages arrive the moment they are sent.
 
-Paper Plane is being built in stages (see [docs/PLAN.md](docs/PLAN.md)). The full README, with pictures of every page, comes in the last stage.
+You can talk to one person (a direct message) or to a group. You see who is online, who is typing, and how many messages you haven't read. Everything changes live, without reloading the page.
+
+![The chat list and a group chat](docs/screenshots/group-chat.png)
+
+## Try It
+
+Open the app and click **Try the demo**. You are Mika, a designer at a small studio called Papel Studio. Your teammates (Ana, Ben, Carlo and Dana) are made up, but they come online, type and answer you. The demo is only for you, and it is deleted after 24 hours.
+
+Want to see two real people chat? Open **Demo** at the top of the menu, then **Invite a friend to play a teammate**. Open the link on your phone or in a private window.
+
+## What It Can Do
+
+| Part | What you can do |
+| --- | --- |
+| Chats | Message one person, or make a group. Your chats are in a list, newest first. |
+| Live | New messages, "is typing", and "Seen" arrive at once, over a WebSocket. |
+| Unread | Each chat shows how many messages you haven't read. The menu shows the total. |
+| Online | A green dot shows who is online. You also see "Away" and "Last seen 5 min ago". You can hide your own. |
+| Message tools | Reply to a message, edit your own, delete for everyone, and react with an emoji. |
+| Groups | Owners and admins can rename, add and remove people, make admins, mute someone, and make invite links. |
+| Blocking | Block someone: neither of you can message the other, or see the other online. |
+| Pictures and files | Send pictures and files (up to 5 MB). Pictures lose their hidden details (like where a photo was taken). |
+| Link previews | A web address in a message gets a small card with the page's title. |
+| Find | Search the words in all your chats. |
+| Mentions | Write @name in a group. That person gets a red @ and a notification. |
+| Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
+| App | Install Paper Plane on your phone's home screen. |
+| Demo | Try the demo, with made-up teammates who answer. |
+
+## Pictures
+
+### Logging In
+
+| Log in | Create an account |
+| --- | --- |
+| ![The login page](docs/screenshots/login.png) | ![Create an account](docs/screenshots/signup.png) |
+
+### Chatting Live
+
+Your chats, newest first. Bold chats have unread messages. A grey number means the chat is muted. A red @ means someone mentioned you.
+
+![The chat list](docs/screenshots/chats.png)
+
+You send a message. Ana reads it ("Seen") and starts typing. Then her answer arrives.
+
+| Ana is typing | Ana answers |
+| --- | --- |
+| ![Seen and Ana is typing](docs/screenshots/live-typing.png) | ![Ana's answer](docs/screenshots/live-reply.png) |
+
+### Message Tools
+
+| The message menu | Replying |
+| --- | --- |
+| ![Reactions and Reply](docs/screenshots/message-menu.png) | ![Replying to a message](docs/screenshots/reply.png) |
+
+| A link preview, and a muted chat | A file |
+| --- | --- |
+| ![A link card](docs/screenshots/link-and-mute.png) | ![A file in a chat](docs/screenshots/file.png) |
+
+### Groups and People
+
+| Group info (you own the group) | What you can do to a member |
+| --- | --- |
+| ![Group info](docs/screenshots/group-info.png) | ![The member menu](docs/screenshots/member-menu.png) |
+
+| Chat info and Block | New chat |
+| --- | --- |
+| ![Chat info](docs/screenshots/chat-info.png) | ![New chat](docs/screenshots/new-chat.png) |
+
+### Search and Settings
+
+| Search | Settings |
+| --- | --- |
+| ![Search](docs/screenshots/search.png) | ![Settings](docs/screenshots/settings.png) |
+
+### Two Real People
+
+Send a friend a link. They play Ben, and the made-up Ben steps aside.
+
+| The links | Your friend opens one |
+| --- | --- |
+| ![Invite a friend](docs/screenshots/invite-friend.png) | ![Join as Ben](docs/screenshots/join-demo.png) |
+
+![Your friend's message arrives live](docs/screenshots/friend-live.png)
+
+### Dark Mode and Phones
+
+![Dark mode](docs/screenshots/dark-chat.png)
+
+| Chats on a phone | A chat on a phone |
+| --- | --- |
+| ![The chat list on a phone](docs/screenshots/phone-chats.png) | ![A chat on a phone](docs/screenshots/phone-chat.png) |
+
+## How It Works
+
+**WebSockets.** A normal web page asks the server for something and gets an answer. A WebSocket stays open, so the server can send you news at any time: a new message, "Ana is typing", "Ben is online". Paper Plane opens one WebSocket for each open tab.
+
+**Events.** Every message on the WebSocket is a small piece of JSON with a `type`, like `message.send` or `typing`. One router (`events.py`) checks each one in the same order: is it the right shape, are you still logged in, are you sending too fast, are you allowed? Then it does the work and answers "ack" (done) or "error".
+
+**Safe to send twice.** Each message has its own id from your browser. If the connection breaks and your browser sends it again, the server saves it only once.
+
+**Catching up.** If your connection breaks, the page tries again: after 1 second, then 2, 4, up to 30. When it is back, it asks "what did I miss?" and gets only the new things.
+
+**Who may do what.** All the rules are in one file (`access.py`). If you are not in a chat, the app says "not found", not "forbidden": a stranger can't even learn that the chat exists. When someone is removed from a group, they stop getting its messages at once. Only people who share a chat with you can see that you are online.
+
+**One server.** Paper Plane remembers who is connected in the server's memory. So it runs as ONE server process (about 60 people at once on the free plan). To use more servers, they would need to pass messages to each other (for example with PostgreSQL `LISTEN/NOTIFY`). That part is explained here, not built.
+
+## Tools
+
+| Tool | What it does here |
+| --- | --- |
+| Python 3.13 | The language of the server. |
+| Flask | The web framework: pages, forms and login. |
+| flask-sock (simple-websocket) | The WebSocket endpoint, `/ws`. |
+| JavaScript | The live parts in the browser (no framework). |
+| SQLAlchemy and Alembic | The database code, and changes to the tables. |
+| SQLite | The database on your computer and in the tests. |
+| PostgreSQL (Neon) | The database on the internet. |
+| Pillow | Re-saves pictures safely, and makes small copies. |
+| pywebpush | Phone and computer notifications (web push). |
+| pytest | The tests (300 of them). |
+| Render | The web server on the internet (free plan). |
 
 ## Run It on Your Computer
 
 ```
+cd C:\Users\USER\Documents\Workspace\chat_app
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
 .venv\Scripts\flask --app paperplane upgrade-db
@@ -14,3 +136,13 @@ python -m venv .venv
 ```
 
 Then open http://127.0.0.1:5015.
+
+Run the tests:
+
+```
+.venv\Scripts\python -m pytest
+```
+
+## Put It on the Internet
+
+See [docs/DEPLOY.md](docs/DEPLOY.md): Neon for the database, Render for the server.

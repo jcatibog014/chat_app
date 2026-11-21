@@ -97,6 +97,19 @@ Rules:
 9. **Find and Notify:** search in your own chats (history rule), @mentions + badge, mute a chat (1 h / 8 h / until turned back on), browser notifications when hidden, PWA + web push when no tab is open.
 10. **Go Live and README:** `render.yaml` (service `paper-plane`, one process, threads), `docs/DEPLOY.md`, README in simple English with screenshots of every page from Try Demo.
 
+## Progress
+
+All 10 stages are built, a commit each, on the branch `build-paper-plane` (300 tests on SQLite).
+
+## Where the Build Differs
+
+- **No GitHub Actions timer.** Old demos are deleted whenever someone starts a new demo (and by `flask --app paperplane purge-demos`). A timer waking the site every 30 minutes would also wake Neon and use up its free compute hours, for no real gain.
+- **Link previews show words only** (the site's name, the page's title and description), no picture: the site only shows pictures it made itself (the CSP), and showing another site's picture would tell that site who is reading.
+- **Edits are allowed for 24 hours** after sending.
+- **A muted chat is fully quiet**, mentions too (they still get the red @).
+- **Offline people show no dot** (a list of grey rings looked cluttered); "Last seen" is in the DM's header.
+- **Demo samples grew with each stage**: reactions, a reply, an edited and a deleted message, a picture, a file, a link card, an @mention, a muted chat, an admin and an invite link in Mika's own group.
+
 ## Not Built (and Why)
 
 - Connections to the other apps (the owner decided against it).
