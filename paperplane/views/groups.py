@@ -1,9 +1,9 @@
 """The chat info page (a group's people, roles, invite links and settings; a DM's Block
-button), its forms, invite links (/join/<code>) and blocking. Every form posts here and
+button; both show the chat's Photos, Files and Links, with their own page), its forms, invite links (/join/<code>) and blocking. Every form posts here and
 comes back to the info page; the changes go out live through the outbox (groups.py)."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from .. import access, blocks, chats, db, groups
+from .. import access, blocks, chats, db, groups, media
 from ..auth import login_required, safe_next
 from ..dates import utcnow
 from ..models import User
@@ -22,11 +22,13 @@ def info(chat_id):
     s = db.session()
     conversation, membership = access.load(s, g.user, chat_id)
     moment = utcnow()
+    shared = {"media_numbers": media.counts(s, conversation, membership),
+              "latest_photos": media.attachments(s, conversation, membership, "photos", limit=6)[0]}
     if conversation.is_dm:
         other = chats.other_person(s, conversation, g.user.id)
         return render_template("chat_info.html", conversation=conversation, membership=membership, other=other,
                                i_blocked=blocks.i_blocked(s, g.user.id, other.id),
-                               they_blocked=blocks.i_blocked(s, other.id, g.user.id))
+                               they_blocked=blocks.i_blocked(s, other.id, g.user.id), **shared)
     members = chats.members(s, conversation)
     members.sort(key=lambda m: (-access.RANK[m.role], m.user.name.lower()))
     in_group = {m.user_id for m in members}
@@ -36,7 +38,29 @@ def info(chat_id):
         moment=moment, is_muted=groups.is_muted, role_names=access.ROLE_NAMES,
         invites=groups.active_invites(s, conversation, moment) if can("invite_links") else [],
         addable=[person for person in chats.people_i_know(s, g.user) if person.id not in in_group],
-        errors={}, form={})
+        errors={}, form={}, **shared)
+
+
+@bp.get("/chats/<int:chat_id>/media")
+@login_required
+def media_page(chat_id):
+    """Photos, Files and Links: the chat's history of them, a tab each (links, so no script needed)."""
+    s = db.session()
+    conversation, membership = access.load(s, g.user, chat_id)
+    numbers = media.counts(s, conversation, membership)
+    tab = request.args.get("tab")
+    if tab not in media.TABS:
+        tab = media.first_tab(numbers)
+    before = request.args.get("before", type=int)
+    if tab == "links":
+        items, more = media.links(s, conversation, membership, before)
+        older = items[-1].message.seq if more and items else None
+    else:
+        items, more = media.attachments(s, conversation, membership, tab, before)
+        older = items[-1][0].id if more and items else None
+    return render_template("chat_media.html", conversation=conversation, title=chats.title_for(s, conversation, g.user.id),
+                           tab=tab, numbers=numbers, items=items, older=older, before=before,
+                           tab_names=media.TAB_NAMES)
 
 
 def act(chat_id, work, message, anchor=None):

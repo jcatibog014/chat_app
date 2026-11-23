@@ -80,6 +80,11 @@ def test_an_expired_demo_logs_out_even_before_it_is_deleted(app):
     assert not is_logged_in(client)
 
 
+def creator_handle(app, chat):
+    with app.app_context():
+        return db.session().get(User, chat.created_by_id).handle
+
+
 def people_with_stories(app, mika):
     from paperplane.models import Story
     with app.app_context():
@@ -118,6 +123,12 @@ def demo_pages(app, client):
             samples = {}
         if chat.title in samples:  # a picture, a link preview and a file to look at
             pages[f"/chats/{chat.id}"].append(samples[chat.title])
+        # Photos, Files and Links: every chat's history has something (the first tab with something opens).
+        pages[f"/chats/{chat.id}/info"].append("Photos, Files and Links")
+        media_samples = {"Papel Studio": "cup-mockup", "Weekend Hike": "Mount Batulao", "Launch Plans": "launch-checklist.txt",
+                         "ana": "kalye-logo-final", "ben": "batulao-trail-map", "carlo": "kalye-palette-notes.txt"}
+        key = chat.title or creator_handle(app, chat)
+        pages[f"/chats/{chat.id}/media"] = ["Photos, Files and Links", media_samples[key]]
         if chat.title == "Launch Plans":  # Mika's own group: every control, an admin and a working invite link
             pages[f"/chats/{chat.id}/info"] += ["Add People", "Invite Links", "2 of 10 used", "Admin", "Delete the Group"]
     return pages

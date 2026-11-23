@@ -286,6 +286,43 @@ def sample_stories(s, team, people, moment):
 fillers.append(sample_stories)
 
 
+# ---------- Photos, Files and Links: something in every chat's history ----------
+
+def sample_media(s, team, people, moment):
+    """More pictures and a file, on messages the sample chats already have, so each chat's
+    Photos, Files and Links page shows something (Weekend Hike has its link, Launch Plans its file)."""
+    from . import files
+    from .models import Conversation, Message
+
+    def message(chat_title, created_by, body):
+        query = select(Message).join(Conversation, Conversation.id == Message.conversation_id).where(
+            Conversation.demo_team_id == team.id, Message.body == body)
+        if chat_title:
+            query = query.where(Conversation.title == chat_title)
+        else:
+            query = query.where(Conversation.kind == "dm", Conversation.created_by_id == people[created_by].id)
+        return s.scalar(query)
+
+    for chat_title, created_by, body, sender, name, data in (
+            ("Papel Studio", None, "I'll bring the printed mockups.", "ben", "cup-mockup.png", cup_picture()),
+            (None, "ana", "Sure! I'll send them before 5.", "mika", "kalye-logo-final.png", logo_picture()),
+            (None, "ben", "Yes, I'll bring it.", "ben", "batulao-trail-map.png", map_picture()),
+            (None, "carlo", "Thanks! It took me all night.", "carlo", "kalye-palette-notes.txt", PALETTE_NOTES.encode())):
+        files.attach(s, message(chat_title, created_by, body), people[sender], files.prepare(name, data))
+
+
+fillers.append(sample_media)
+
+PALETTE_NOTES = """Kalye Coffee palette (Carlo)
+
+Harbour blue  #1D4E6B  cups, signs
+Sky blue      #2F80A8  menu headings
+Sunny yellow  #F2C14E  stickers, sleeves
+Clay orange   #E07A3F  sale tags
+Cream         #F6EFE3  backgrounds
+"""
+
+
 CHECKLIST = """Website launch checklist (Papel Studio)
 
 [x] Buy the domain
@@ -312,6 +349,61 @@ def palette_picture():
     out = io.BytesIO()
     picture.save(out, "PNG")
     return out.getvalue()
+
+
+def _png(picture):
+    import io
+    out = io.BytesIO()
+    picture.save(out, "PNG")
+    return out.getvalue()
+
+
+def cup_picture():
+    """Ben's printed mockup: a Kalye Coffee cup in Carlo's blue and yellow."""
+    from PIL import Image, ImageDraw
+    picture = Image.new("RGB", (800, 800), "#f6efe3")
+    draw = ImageDraw.Draw(picture)
+    draw.ellipse([170, 640, 630, 720], fill="#e3d6c2")                       # the shadow
+    draw.polygon([(230, 230), (570, 230), (530, 680), (270, 680)], fill="#1d4e6b")  # the cup
+    draw.rectangle([215, 200, 585, 250], fill="#13384f")                     # the lid
+    draw.rounded_rectangle([250, 380, 550, 520], radius=12, fill="#f2c14e")  # the sleeve
+    draw.ellipse([355, 405, 445, 495], fill="#1d4e6b")                       # a coffee bean
+    draw.line([(400, 412), (400, 488)], fill="#f2c14e", width=8)
+    return _png(picture)
+
+
+def logo_picture():
+    """Mika's final logo for Kalye Coffee: a bean in a circle, with the shop's name."""
+    from PIL import Image, ImageDraw, ImageFont
+    picture = Image.new("RGB", (900, 600), "#ffffff")
+    draw = ImageDraw.Draw(picture)
+    draw.ellipse([330, 60, 570, 300], fill="#1d4e6b")
+    draw.ellipse([395, 110, 505, 250], fill="#f2c14e")
+    draw.arc([420, 110, 480, 250], 250, 110, fill="#1d4e6b", width=10)
+    font = ImageFont.load_default(size=72)
+    draw.text((450, 400), "KALYE COFFEE", fill="#13384f", font=font, anchor="mm")
+    draw.text((450, 480), "since 2026", fill="#2f80a8", font=ImageFont.load_default(size=34), anchor="mm")
+    return _png(picture)
+
+
+def map_picture():
+    """The hiking map Ben brings: hills, a dashed trail and the peak."""
+    from PIL import Image, ImageDraw
+    picture = Image.new("RGB", (900, 640), "#e4efd9")
+    draw = ImageDraw.Draw(picture)
+    for ring in range(6):  # contour lines around the peak
+        grow = ring * 55
+        draw.ellipse([520 - grow, 170 - grow * 0.6, 720 + grow, 330 + grow * 0.6], outline="#9fbf88", width=3)
+    trail = [(90, 560), (200, 500), (260, 420), (380, 400), (450, 320), (560, 280), (620, 250)]
+    for start, end in zip(trail, trail[1:]):
+        steps = 6
+        for step in range(0, steps, 2):
+            a = (start[0] + (end[0] - start[0]) * step / steps, start[1] + (end[1] - start[1]) * step / steps)
+            b = (start[0] + (end[0] - start[0]) * (step + 1) / steps, start[1] + (end[1] - start[1]) * (step + 1) / steps)
+            draw.line([a, b], fill="#c4411a", width=7)
+    draw.polygon([(620, 205), (650, 255), (590, 255)], fill="#5b4636")       # the peak
+    draw.ellipse([75, 545, 105, 575], fill="#1d4e6b")                         # the start
+    return _png(picture)
 
 
 def sunrise_picture():

@@ -1,0 +1,27 @@
+{% from "_icons.html" import icon %}
+{# Chat info: the chat's Photos, Files and Links. The latest photos, then a row for each kind
+   with its number, each opening that tab of the full page (views/groups.media_page). #}
+{% macro media_card(conversation, numbers, latest_photos) %}
+  <section class="card media-card" id="media">
+    <div class="card-head">
+      <h2>Photos, Files and Links</h2>
+      <a class="button button-quiet button-small" href="{{ url_for('groups.media_page', chat_id=conversation.id) }}">See all</a>
+    </div>
+    {% if latest_photos %}
+      <ul class="media-strip">
+        {% for attachment, message in latest_photos %}
+          <li><a href="{{ url_for('groups.media_page', chat_id=conversation.id, tab='photos') }}">
+            <img src="{{ url_for('files.thumb', attachment_id=attachment.id) }}" alt="Picture{% if message.sender %} from {{ message.sender.first_name }}{% endif %}" width="96" height="96" loading="lazy">
+          </a></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <ul class="media-kinds">
+      {% for tab, name, symbol in (('photos', 'Photos', 'image'), ('files', 'Files', 'file'), ('links', 'Links', 'link')) %}
+        <li><a href="{{ url_for('groups.media_page', chat_id=conversation.id, tab=tab) }}">
+          {{ icon(symbol, 20) }}<span>{{ name }}</span><strong>{{ numbers[tab] }}</strong>{{ icon('chevron-right', 18) }}
+        </a></li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endmacro %}
