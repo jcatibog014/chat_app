@@ -89,6 +89,8 @@ def demo_pages(app, client):
     pages = {"/chats": ["Papel Studio", "Weekend Hike", "Launch Plans", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
              "/chats/new": ["People You Know", "Dana Lim"],
              "/settings": ["Your Account", "Time Zone"],
+             "/settings/appearance": ["Pink", "Purple"], "/settings/notifications": ["On This Device"],
+             "/settings/privacy": ["Show When I'm Online", "Blocked People"], "/settings/devices": ["Leave the Demo"],
              "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"],
              "/search": ["Search Your Messages"],
              "/search?q=mockups": ["<mark>mockups</mark>", "Papel Studio"]}

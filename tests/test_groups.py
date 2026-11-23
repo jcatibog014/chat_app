@@ -305,10 +305,10 @@ def test_blocked_people_dont_see_each_other_online(app, pair):
 
 def test_unblocking_puts_it_back_and_settings_lists_them(app, pair):
     post(pair["client"]["ella"], f"/people/{pair['ids']['finn']}/block")
-    page = words(pair["client"]["ella"].get("/settings"))
+    page = words(pair["client"]["ella"].get("/settings/privacy"))
     assert "Blocked People" in page and "Finn Person" in page
     post(pair["client"]["ella"], f"/people/{pair['ids']['finn']}/unblock")
-    assert "You haven't blocked anyone." in words(pair["client"]["ella"].get("/settings"))
+    assert "You haven't blocked anyone." in words(pair["client"]["ella"].get("/settings/privacy"))
     assert post(pair["client"]["finn"], f"/chats/{pair['chat']}/send", {"body": "hi again"}).status_code == 302
 
 

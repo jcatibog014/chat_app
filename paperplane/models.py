@@ -51,6 +51,9 @@ class User(Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime)
     time_zone: Mapped[str] = mapped_column(String(64), default=DEFAULT_ZONE)
     show_presence: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    # The colour the app is drawn in for this person (Settings, Appearance): pink (the logo's,
+    # the default), purple, red or blue. Saved on the account, so it follows them to any device.
+    accent: Mapped[str] = mapped_column(String(10), default="pink", server_default="pink")
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     demo_team_id: Mapped[int | None] = mapped_column(ForeignKey("demo_teams.id", ondelete="CASCADE"), index=True)

@@ -28,6 +28,8 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Find | Search the words in all your chats. |
 | Mentions | Write @name in a group. That person gets a red @ and a notification. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
+| Colours | Pink (like the logo) is the default. You can choose purple, red or blue, and light or dark. |
+| Settings | Settings has pages: Account, Appearance, Notifications, Privacy and Devices. |
 | App | Install Paper Plane on your phone's home screen. |
 | Demo | Try the demo, with made-up teammates who answer. |
 
@@ -81,6 +83,16 @@ Click your picture to open your profile menu: Settings, and Log out.
 
 ![The profile menu](docs/screenshots/profile-menu.png)
 
+### Colours
+
+Settings has a page for each part: Account, Appearance, Notifications, Privacy and Devices. In **Appearance** you choose the app's colour: pink (the logo's colour, the default), purple, red or blue. Your colour is saved to your account, so it is the same on every device.
+
+![The Appearance page](docs/screenshots/appearance.png)
+
+| Purple | Blue |
+| --- | --- |
+| ![The app in purple](docs/screenshots/colour-purple.png) | ![The app in blue](docs/screenshots/colour-blue.png) |
+
 ### Two Real People
 
 Send a friend a link. They play Ben, and the made-up Ben steps aside.
@@ -127,6 +139,7 @@ On a phone there is no menu at the top. The bar at the bottom has **Chats** and 
 | SQLite | The database on your computer and in the tests. |
 | PostgreSQL (Neon) | The database on the internet. |
 | Pillow | Re-saves pictures safely, and makes small copies. |
+| CSS custom properties | The four colour palettes, each in light and dark. |
 | pywebpush | Phone and computer notifications (web push). |
 | pytest | The tests (300 of them). |
 | Render | The web server on the internet (free plan). |

@@ -188,7 +188,7 @@ def block(user_id):
     blocks.block(s, g.user, other, utcnow())
     s.commit()
     flash(f"You blocked {other.name}. Neither of you can message the other now.")
-    return redirect(safe_next(request.form.get("next"), url_for("settings.page", _anchor="blocked")))
+    return redirect(safe_next(request.form.get("next"), url_for("settings.page", section="privacy")))
 
 
 @bp.post("/people/<int:user_id>/unblock")
@@ -201,7 +201,7 @@ def unblock(user_id):
     blocks.unblock(s, g.user, other, utcnow())
     s.commit()
     flash(f"You unblocked {other.name}.")
-    return redirect(safe_next(request.form.get("next"), url_for("settings.page", _anchor="blocked")))
+    return redirect(safe_next(request.form.get("next"), url_for("settings.page", section="privacy")))
 
 
 def blocked_section(s, user):

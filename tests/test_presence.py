@@ -138,7 +138,7 @@ def test_the_dm_header_says_online_or_last_seen(app):
 def test_the_settings_switch(app):
     maria_id = make_user(app, "maria")
     client = browser(app, maria_id)
-    assert "Show When I'm Online" in words(client.get("/settings"))
+    assert "Show When I'm Online" in words(client.get("/settings/privacy"))
     response = post(client, "/settings", {"action": "show_presence", "show_presence": "0"}, follow_redirects=True)
     assert "Nobody can see when you're online now." in words(response)
     with app.app_context():

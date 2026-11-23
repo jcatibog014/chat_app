@@ -10,11 +10,89 @@ def user(app, user_id):
         return db.session().get(User, user_id)
 
 
-def test_settings_shows_every_section(maria):
+PAGES = {
+    "account": ["Your Account", "Time Zone"],
+    "appearance": ["Colour", "Pink", "Purple", "Red", "Blue", "Light or Dark"],
+    "notifications": ["Notifications", "On This Device"],
+    "privacy": ["Show When I'm Online", "Blocked People"],
+    "devices": ["Log Out Other Devices", "Log Out"],
+}
+
+
+def address(name):
+    """Account is Settings' first page, at /settings itself (/settings/account redirects there)."""
+    return "/settings" if name == "account" else f"/settings/{name}"
+
+
+def test_settings_has_a_page_for_each_part(maria):
     client, _ = maria
+    for name, headings in PAGES.items():
+        page = words(client.get(address(name)))
+        for heading in headings:
+            assert heading in page, (name, heading)
+    # /settings opens Account, and nothing from the other pages.
     page = words(client.get("/settings"))
-    for heading in ("Your Account", "Time Zone", "Appearance", "Devices", "Log Out Other Devices"):
-        assert heading in page
+    assert "Your Account" in page and "Log Out Other Devices" not in page and "Blocked People" not in page
+
+
+def test_settings_has_one_small_menu_to_its_pages(maria):
+    client, _ = maria
+    page = client.get("/settings/privacy").get_data(as_text=True)
+    menu = page.split('aria-label="Settings pages"', 1)[1].split("</nav>", 1)[0]
+    for name in PAGES:
+        assert f'href="{address(name)}"' in menu
+    assert menu.count('aria-current="page"') == 1 and 'href="/settings/privacy" aria-current="page"' in menu
+    # The way IN stays one link, in the profile menu (the sky menu has no Settings entry).
+    sky = page.split('<ul class="side-links">', 1)[1].split("</ul>", 1)[0]
+    assert "/settings" not in sky
+
+
+def test_an_unknown_settings_page_is_not_found(maria):
+    client, _ = maria
+    assert client.get("/settings/secrets").status_code == 404
+
+
+def test_each_form_comes_back_to_its_own_page(maria):
+    client, _ = maria
+    assert post(client, "/settings", {"action": "time_zone", "time_zone": "Asia/Tokyo"}).headers["Location"].endswith("/settings")
+    assert post(client, "/settings/devices", {"action": "logout_others"}).headers["Location"].endswith("/settings/devices")
+    assert post(client, "/settings/appearance", {"action": "accent", "accent": "red"}).headers["Location"].endswith("/settings/appearance")
+
+
+# ---------- The app's colour ----------
+
+def test_pink_is_the_default_colour(app, maria):
+    client, user_id = maria
+    assert user(app, user_id).accent == "pink"
+    assert '<html lang="en" data-accent="pink">' in client.get("/chats").get_data(as_text=True)
+    assert '<html lang="en" data-accent="pink">' in browser(app).get("/login").get_data(as_text=True)
+
+
+def test_choosing_a_colour_saves_it_to_the_account(app, maria):
+    client, user_id = maria
+    response = post(client, "/settings/appearance", {"action": "accent", "accent": "purple"}, follow_redirects=True)
+    assert "Paper Plane is purple now." in words(response)
+    assert user(app, user_id).accent == "purple"
+    # Every page, on any device, is drawn in it.
+    other_device = browser(app, user_id)
+    page = other_device.get("/chats").get_data(as_text=True)
+    assert '<html lang="en" data-accent="purple">' in page and '<meta name="theme-color" content="#7b2cbf">' in page
+    checked = other_device.get("/settings/appearance").get_data(as_text=True)
+    assert 'value="purple" checked' in checked
+
+
+def test_only_the_four_colours(app, maria):
+    client, user_id = maria
+    response = post(client, "/settings/appearance", {"action": "accent", "accent": "rainbow"})
+    assert response.status_code == 400 and "Choose one of the colours." in words(response)
+    assert user(app, user_id).accent == "pink"
+
+
+def test_the_demo_may_try_colours(app):
+    demo = browser(app)
+    post(demo, "/demo")
+    response = post(demo, "/settings/appearance", {"action": "accent", "accent": "blue"}, follow_redirects=True)
+    assert response.status_code == 200 and 'data-accent="blue"' in response.get_data(as_text=True)
 
 
 def test_change_name(app, maria):

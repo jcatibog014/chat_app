@@ -192,9 +192,9 @@ def test_saving_and_forgetting_devices(app, team):
                       headers={"X-CSRF-Token": "test-csrf-token"})
     assert bad.status_code == 400
     assert client.post("/notifications/devices", json=good).status_code == 400  # no CSRF token
-    assert "1 phone or browser gets notifications" in words(client.get("/settings"))
+    assert "1 phone or browser gets notifications" in words(client.get("/settings/notifications"))
     post(client, "/notifications/devices/forget")
-    assert "No device gets notifications" in words(client.get("/settings"))
+    assert "No device gets notifications" in words(client.get("/settings/notifications"))
 
 
 # ---------- The installable app ----------
