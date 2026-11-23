@@ -154,10 +154,13 @@ def prepare(s, messages):
     if reply_ids:
         for target in s.scalars(select(Message).where(Message.id.in_(reply_ids))):
             replies[target.id] = target
-    from . import files, previews
+    from . import files, previews, stories
+    from .dates import utcnow
     attached = files.attachments_for(s, ids)
     linked = previews.previews_for(s, ids)
+    now = utcnow()
     for m in messages:
+        m.story_info = stories.quote_info(s, m, now) if not m.deleted_at else None
         m.attachment_list = [] if m.deleted_at else attached.get(m.id, [])
         m.link_preview = None if m.deleted_at else linked.get(m.id)
         m.reaction_list = [

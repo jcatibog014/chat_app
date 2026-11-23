@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, csrf %}
+{% from "_icons.html" import icon %}
+{% block title %}New Story - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('New Story', back=url_for('stories.index'), back_label='Stories') }}
+  <form class="card narrow-card story-form" method="post" action="{{ url_for('stories.new') }}" enctype="multipart/form-data" data-story-form>
+    {{ csrf() }}
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    {% set kind = form.get('kind', 'photo') %}
+    <fieldset class="story-kinds">
+      <legend class="field-label">What kind</legend>
+      <label class="story-kind"><input type="radio" name="kind" value="photo"{% if kind == 'photo' %} checked{% endif %} data-story-kind> {{ icon('image', 20) }} Photo</label>
+      <label class="story-kind"><input type="radio" name="kind" value="text"{% if kind == 'text' %} checked{% endif %} data-story-kind> {{ icon('chats', 20) }} Text card</label>
+    </fieldset>
+
+    <div class="story-part" data-story-part="photo">
+      <label class="field">
+        <span class="field-label"><span>Photo <span class="hint">JPEG, PNG, GIF or WebP, up to 5 MB</span></span></span>
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/gif,image/webp" data-story-photo>
+      </label>
+      <img class="story-preview" alt="" hidden data-story-preview>
+    </div>
+
+    <label class="field">
+      <span class="field-label"><span data-story-text-label>Words <span class="hint">(for a photo, a caption you may leave out)</span></span></span>
+      <textarea name="text" rows="3" maxlength="250" placeholder="What's new?" data-story-text>{{ form.get('text', '') }}</textarea>
+    </label>
+
+    <div class="story-part" data-story-part="text">
+      <fieldset>
+        <legend class="field-label">Card colour</legend>
+        <div class="story-backgrounds">
+          {% set chosen = form.get('background', 'pink') %}
+          {% for name, title in STORY_BACKGROUNDS %}
+            <label class="story-bg-choice story-bg-{{ name }}" title="{{ title }}">
+              <input type="radio" name="background" value="{{ name }}"{% if name == chosen %} checked{% endif %} data-story-bg>
+              <span class="visually-hidden">{{ title }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div class="story-face story-text story-card story-bg-{{ form.get('background', 'pink') }}" data-story-card-preview><p>{{ form.get('text') or "What's new?" }}</p></div>
+    </div>
+
+    <fieldset class="story-audience">
+      <legend class="field-label">Who can see it</legend>
+      {% set audience = form.get('audience', 'everyone') %}
+      <label class="check"><input type="radio" name="audience" value="everyone"{% if audience == 'everyone' %} checked{% endif %}>
+        <span><strong>Everyone you chat with</strong><span class="hint"> People you share a chat with.</span></span></label>
+      <label class="check"><input type="radio" name="audience" value="close"{% if audience == 'close' %} checked{% endif %}>
+        <span><strong>Close Friends</strong><span class="hint"> {{ close_count }} {{ 'person' if close_count == 1 else 'people' }} ·
+          <a href="{{ url_for('settings.page', section='privacy') }}#close-friends">edit the list</a></span></span></label>
+    </fieldset>
+
+    <div class="form-actions"><button class="button" type="submit">{{ icon('send', 18) }} Share story</button></div>
+  </form>
+{% endblock %}

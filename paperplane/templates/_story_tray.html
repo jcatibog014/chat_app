@@ -1,0 +1,32 @@
+{% from "_macros.html" import avatar %}
+{% from "_icons.html" import icon %}
+{# The circles above the chat list: "Your story" first, then the people you chat with who have
+   stories you may see. A ring in the app's colour = something you haven't seen; grey = all seen.
+   stories.js swaps this in again (from /stories/tray) when someone posts or deletes a story. #}
+{% macro story_tray(my_ring, rings) %}
+  <ul class="story-tray" aria-label="Stories">
+    <li>
+      {% if my_ring %}
+        <a class="story-circle" href="{{ url_for('stories.view', person_id=g.user.id) }}" title="Your story">
+          <span class="ring is-seen">{{ avatar(g.user) }}</span>
+          <span class="story-name">Your story</span>
+        </a>
+        <a class="story-add" href="{{ url_for('stories.new') }}" title="Add to your story">{{ icon('plus', 14) }}<span class="visually-hidden">Add to your story</span></a>
+      {% else %}
+        <a class="story-circle" href="{{ url_for('stories.new') }}" title="Add a story">
+          <span class="ring is-empty">{{ avatar(g.user) }}<span class="story-plus">{{ icon('plus', 14) }}</span></span>
+          <span class="story-name">Your story</span>
+        </a>
+      {% endif %}
+    </li>
+    {% for ring in rings %}
+      <li>
+        <a class="story-circle" href="{{ url_for('stories.view', person_id=ring.person.id) }}"
+           title="{{ ring.person.name }}'s story{{ ' (new)' if ring.has_unseen }}">
+          <span class="ring{{ ' is-new' if ring.has_unseen else ' is-seen' }}">{{ avatar(ring.person) }}</span>
+          <span class="story-name">{{ ring.person.first_name }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}

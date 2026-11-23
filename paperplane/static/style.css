@@ -290,7 +290,7 @@ html:not(.js) .js-only { display: none !important; }
   .sidebar { display: none; }
   :root { --bottom-nav: calc(3.7rem + env(safe-area-inset-bottom, 0px)); }
   .main-column { padding-bottom: var(--bottom-nav); }
-  .bottom-nav { position: fixed; z-index: 35; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr;
+  .bottom-nav { position: fixed; z-index: 35; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr);
     height: var(--bottom-nav); padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--surface); border-top: 1px solid var(--rule); box-shadow: 0 -4px 16px rgb(19 38 59 / .06); }
   .bottom-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; height: 100%;
@@ -752,6 +752,148 @@ details.fold[open] { flex: 1 1 100%; }
 .result-body { color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
 .result-who { color: var(--ink); font-weight: 600; }
 .result-body mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); border-radius: 3px; padding: 0 .1rem; }
+
+/* ---------- Stories ---------- */
+
+/* The circles above the chat list. A ring in the app's colour: something new; grey: all seen. */
+.story-tray-wrap { padding: 0 .6rem .55rem; border-bottom: 1px solid var(--rule); }
+.story-tray { list-style: none; display: flex; gap: .55rem; margin: 0; padding: .2rem .25rem .25rem; overflow-x: auto; scrollbar-width: thin; }
+.story-tray li { position: relative; flex: 0 0 auto; }
+.story-circle { display: grid; justify-items: center; gap: .25rem; width: 4.1rem; color: var(--ink); text-decoration: none; }
+.story-circle:hover { color: var(--ink); }
+.ring { position: relative; display: grid; place-items: center; width: 3.4rem; height: 3.4rem; padding: 5px; border-radius: 50%; }
+.ring .avatar { width: 100%; height: 100%; box-shadow: 0 0 0 2px var(--surface); }
+.ring.is-new { background: conic-gradient(from 210deg, var(--accent), var(--link), var(--accent-hover), var(--accent)); }
+.ring.is-seen { background: color-mix(in srgb, var(--muted) 55%, var(--surface)); }
+.ring.is-empty { padding: 1px; border: 2px dashed var(--control-border); }
+.story-plus, .story-add { position: absolute; display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 2px var(--surface); }
+.story-plus { right: -2px; bottom: -2px; }
+.story-add { right: .2rem; top: 2.3rem; }
+.story-name { max-width: 4.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .74rem; color: var(--muted); }
+
+/* A story's face: a photo, or words on a colour (white words, 4.5:1 or more on every card colour). */
+.story-face { position: relative; overflow: hidden; aspect-ratio: 9 / 16; border-radius: var(--radius); background: #101014; color: #ffffff; }
+.story-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.story-caption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 1.6rem .8rem .8rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / .65)); font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
+.story-text { display: grid; place-items: center; padding: 1rem; text-align: center; }
+.story-text p { margin: 0; font: 700 1.05rem/1.35 var(--font-display); overflow-wrap: anywhere; }
+.story-bg-pink { background: linear-gradient(160deg, #d81b60, #880e4f); }
+.story-bg-purple { background: linear-gradient(160deg, #8e24aa, #4a148c); }
+.story-bg-blue { background: linear-gradient(160deg, #1565c0, #0d3c6e); }
+.story-bg-teal { background: linear-gradient(160deg, #00796b, #004d40); }
+.story-bg-orange { background: linear-gradient(160deg, #c4411a, #8a2a0a); }
+.story-bg-night { background: linear-gradient(160deg, #1e293b, #0f172a); }
+
+/* The Stories page */
+.stories-section + .stories-section { margin-top: 2.2rem; }
+.stories-section h2 { margin-bottom: 1rem; }
+.story-grid, .story-people { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); }
+.story-people { grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); }
+@media (max-width: 40rem) { .story-grid, .story-people { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; } }
+.story-tile a, .story-person { display: block; color: var(--ink); text-decoration: none; }
+.story-tile a:hover .story-face, .story-person:hover .story-face { box-shadow: 0 0 0 3px var(--accent); }
+.story-tile-info { display: grid; margin-top: .45rem; font-size: .88rem; }
+.story-tile-info small { color: var(--muted); }
+.story-tile-add a { display: grid; place-items: center; align-content: center; gap: .4rem; aspect-ratio: 9 / 16;
+  border: 2px dashed var(--control-border); border-radius: var(--radius); color: var(--muted); font-weight: 600; }
+.story-tile-add a:hover { color: var(--link); border-color: var(--accent); }
+.story-person-who { display: flex; align-items: center; gap: .55rem; margin-top: .5rem; }
+.story-person-who > span:last-child { display: grid; min-width: 0; line-height: 1.3; }
+.story-person-who small { color: var(--muted); }
+.story-person-who .ring { width: 2.5rem; height: 2.5rem; padding: 4px; }
+.new-tag { color: var(--link); font-weight: 700; }
+.close-tag { color: var(--ok); font-weight: 600; }
+
+/* The viewer: the story fills the screen (9:16, rounded on a big screen), its controls over it. */
+.story-body { background: #0b0b10; }
+.story-viewer { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; background: #0b0b10; }
+.story-stage { position: relative; width: min(100vw, calc(100dvh * 9 / 16)); height: 100dvh; overflow: hidden; background: #000; }
+@media (min-width: 40rem) { .story-stage { height: calc(100dvh - 2rem); width: min(100vw, calc((100dvh - 2rem) * 9 / 16)); border-radius: 16px; } }
+.story-stage .story-full { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+.story-full.story-photo img { object-fit: contain; }
+.story-full.story-text p { font-size: clamp(1.4rem, 1rem + 2vw, 2rem); padding: 0 1rem; }
+.story-full .story-caption { bottom: 7.5rem; background: none; text-align: center; text-shadow: 0 1px 3px rgb(0 0 0 / .7); font-size: 1.05rem; }
+.story-bars { position: absolute; z-index: 3; top: .6rem; left: .6rem; right: .6rem; display: flex; gap: 4px; }
+.story-bar { flex: 1; height: 3px; border-radius: 2px; background: rgb(255 255 255 / .35); overflow: hidden; }
+.story-bar span { display: block; width: 0; height: 100%; background: #ffffff; }
+.story-bar.is-done span { width: 100%; }
+.story-bar.is-now span { width: 100%; opacity: .7; }
+.story-bar.is-now.is-running span { width: 0; opacity: 1; animation: story-fill 5s linear forwards; }
+.story-bar.is-now.is-paused span { animation-play-state: paused; }
+@keyframes story-fill { to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .story-bar.is-now.is-running span { animation-duration: 5s; } }
+.story-top { position: absolute; z-index: 4; top: 1.3rem; left: .75rem; right: .5rem; display: flex; align-items: center; gap: .6rem;
+  color: #ffffff; text-shadow: 0 1px 2px rgb(0 0 0 / .5); }
+.story-who { flex: 1 1 auto; min-width: 0; display: grid; line-height: 1.25; }
+.story-who small { opacity: .85; }
+.story-icon { display: inline-grid; place-items: center; width: 2.4rem; height: 2.4rem; border: 0; border-radius: 50%;
+  background: rgb(0 0 0 / .28); color: #ffffff; cursor: pointer; text-decoration: none; list-style: none; }
+.story-icon::-webkit-details-marker { display: none; }
+.story-icon:hover { background: rgb(0 0 0 / .45); color: #ffffff; }
+.story-more { position: relative; }
+.story-more .member-menu-items { text-shadow: none; }
+.story-tap { position: absolute; z-index: 2; top: 4.5rem; bottom: 7.5rem; }
+.story-prev { left: 0; width: 33%; }
+.story-next { right: 0; width: 67%; }
+.story-bottom { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; display: grid; gap: .6rem;
+  padding: 2.2rem .75rem calc(.9rem + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, rgb(0 0 0 / .6)); }
+.story-bottom:has(.story-seen) { display: flex; align-items: flex-end; justify-content: space-between; gap: .75rem; }
+.story-reactions { display: flex; justify-content: space-between; gap: .2rem; }
+.story-reactions form { margin: 0; }
+.story-react { width: 2.6rem; height: 2.6rem; border: 0; border-radius: 50%; background: rgb(255 255 255 / .14); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.story-react:hover { background: rgb(255 255 255 / .3); }
+.story-react.is-mine { background: rgb(255 255 255 / .38); box-shadow: 0 0 0 2px #ffffff; }
+.story-reply { display: flex; align-items: center; gap: .4rem; padding: .2rem .2rem .2rem 1rem; border: 1px solid rgb(255 255 255 / .65); border-radius: 99px; }
+.story-reply input { flex: 1 1 auto; max-width: none; min-height: 2.4rem; padding: 0; border: 0; background: transparent; color: #ffffff; }
+.story-reply input::placeholder { color: rgb(255 255 255 / .8); }
+.story-reply input:focus-visible { outline: none; }
+.story-reply:focus-within { border-color: #ffffff; box-shadow: 0 0 0 2px rgb(255 255 255 / .5); }
+.story-seen { color: #ffffff; flex: 1 1 auto; min-width: 0; }
+.story-seen summary { display: inline-flex; align-items: center; gap: .4rem; list-style: none; cursor: pointer; font-weight: 600; }
+.story-seen summary::-webkit-details-marker { display: none; }
+.story-seen-list { margin-top: .5rem; max-height: 42dvh; overflow: auto; padding: .4rem; border-radius: var(--radius); background: var(--surface); color: var(--ink); }
+.story-seen-list ul { list-style: none; margin: 0; padding: 0; }
+.story-seen-list li { display: flex; align-items: center; gap: .6rem; padding: .45rem .3rem; }
+.story-seen-list li + li { border-top: 1px solid var(--rule); }
+.story-seen-list li > span:nth-child(2) { flex: 1 1 auto; display: grid; line-height: 1.25; }
+.story-seen-list small { color: var(--muted); }
+.story-seen-list p { padding: .5rem; color: var(--muted); }
+.story-seen-emoji { font-size: 1.2rem; }
+.story-pill { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .9rem; border: 1px solid rgb(255 255 255 / .65);
+  border-radius: 99px; background: transparent; color: #ffffff; font: 600 .9rem var(--font-body); cursor: pointer; }
+.story-pill.button-danger { color: #ffb4ab; border-color: #ffb4ab; }
+.story-bottom form { margin: 0; }
+
+/* New Story */
+.story-form > * + * { margin-top: 1.1rem; }
+.story-kinds { display: flex; gap: .6rem; }
+.story-kinds legend { margin-bottom: .45rem; }
+.story-kind { position: relative; flex: 1 1 0; display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .75rem;
+  border: 1px solid var(--rule); border-radius: var(--radius); font-weight: 600; cursor: pointer; }
+.story-kind input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.story-kind:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); color: var(--link); }
+.story-kind:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.story-backgrounds { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .4rem; }
+.story-bg-choice { position: relative; width: 2.4rem; height: 2.4rem; border-radius: 50%; cursor: pointer; }
+.story-bg-choice input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.story-bg-choice:has(input:checked) { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
+.story-bg-choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 4px; }
+.story-form .story-card { width: 9rem; margin-top: .9rem; }
+.story-preview { display: block; max-width: 12rem; margin-top: .7rem; border-radius: var(--radius); }
+.story-audience { display: grid; gap: .55rem; }
+.story-audience legend { margin-bottom: .3rem; }
+
+/* A private reply to a story, in the chat */
+.story-quote { display: flex; align-items: center; gap: .55rem; margin: 0 0 .35rem; padding: .3rem .5rem; border-left: 3px solid var(--accent);
+  border-radius: 6px; background: color-mix(in srgb, var(--accent) 9%, transparent); font-size: .84rem; max-width: 22rem; }
+.story-quote-face img, .story-quote-face span { display: block; width: 2.2rem; height: 3.5rem; border-radius: 4px; object-fit: cover; }
+.story-quote > span { display: grid; min-width: 0; }
+.story-quote small { color: var(--link); font-weight: 600; }
+.story-quote em { color: var(--muted); }
+.story-quote > span > span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* The demo's friend links and the Join page */
 .narrow-card { max-width: 46rem; }

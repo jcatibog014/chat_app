@@ -1,4 +1,5 @@
 {% from "_icons.html" import icon %}
+{% from "_story_tray.html" import story_tray as story_tray_circles %}
 {% from "_chat_row.html" import chat_row %}
 {# The list of chats: the left side of the chat page. New Chat and Search open on the right of
    the same page (the owner's choice: no separate pages for them), from the two buttons here.
@@ -11,6 +12,8 @@
       <a class="icon-button{% if pane == 'new' %} is-here{% endif %}" href="{{ url_for('chats.new') }}" title="New chat"{% if pane == 'new' %} aria-current="page"{% endif %}>{{ icon('new-chat', 20) }}<span class="visually-hidden">New chat</span></a>
     </div>
   </div>
+  {% set tray = story_tray() %}
+  <div class="story-tray-wrap" data-story-tray>{{ story_tray_circles(tray.my_ring, tray.rings) }}</div>
   {% if rows %}
     <ul class="chat-list" data-chat-list>
       {% for row in rows %}{{ chat_row(row, open_id, presence_of|default(None)) }}{% endfor %}

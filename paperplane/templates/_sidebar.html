@@ -25,6 +25,7 @@
     <nav aria-label="Main">
       <ul class="side-links">
         <li><a href="{{ url_for('chats.index') }}"{% if page.startswith('chats.') or page == 'search.page' %} aria-current="page"{% endif %}>{{ icon('chats', 20) }} <span class="side-label">Chats</span><span class="count" data-total-unread{% if not unread %} hidden{% endif %}>{{ unread }}</span></a></li>
+        <li><a href="{{ url_for('stories.index') }}"{% if page.startswith('stories.') %} aria-current="page"{% endif %}>{{ icon('stories', 20) }} <span class="side-label">Stories</span></a></li>
       </ul>
     </nav>
     <div class="sidebar-foot">
@@ -42,11 +43,15 @@
  </div>
 </aside>
 
-{# The phone's bottom bar: Chats and Profile. Hidden inside an open chat (the chat has a back arrow). #}
+{# The phone's bottom bar: Chats, Stories and Profile. Hidden inside an open chat (the chat has a back arrow). #}
 <nav class="bottom-nav" aria-label="Main">
   <a class="bottom-link" href="{{ url_for('chats.index') }}"{% if page.startswith('chats.') or page == 'search.page' %} aria-current="page"{% endif %}>
     <span class="bottom-icon">{{ icon('chats', 22) }}<span class="count" data-total-unread{% if not unread %} hidden{% endif %}>{{ unread }}</span></span>
     <span>Chats</span>
+  </a>
+  <a class="bottom-link" href="{{ url_for('stories.index') }}"{% if page.startswith('stories.') %} aria-current="page"{% endif %}>
+    <span class="bottom-icon">{{ icon('stories', 22) }}</span>
+    <span>Stories</span>
   </a>
   <details class="bottom-profile" data-popover>
     <summary class="bottom-link"{% if page.startswith('settings.') %} aria-current="page"{% endif %}>

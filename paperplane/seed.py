@@ -234,6 +234,58 @@ def sample_chats(s, team, people, moment):
 
 fillers.append(sample_chats)
 
+# ---------- Sample stories ----------
+
+def sample_stories(s, team, people, moment):
+    """Stories from today: a ring of each kind above Mika's chats, and Mika's own with Seen by."""
+    from . import files
+    from .models import CloseFriend, Conversation, Message, Story, StoryMute, StoryReaction, StoryView
+    ana, ben, carlo, dana, mika = (people[handle] for handle in ("ana", "ben", "carlo", "dana", "mika"))
+
+    def story(person, hours, kind="text", text=None, background=None, audience="everyone", picture=None):
+        made = ago(moment, hours=hours)
+        item = Story(user_id=person.id, kind=kind, text=text, background=background, audience=audience,
+                     created_at=made, expires_at=made + timedelta(hours=24))
+        if picture is not None:
+            prepared = files.prepare("story.png", picture)
+            item.image, item.thumb = prepared.data, prepared.thumb
+            item.width, item.height = prepared.width, prepared.height
+        s.add(item)
+        s.flush()
+        return item
+
+    # Ana: a photo Mika hasn't seen (a coloured ring). Ben: a card Mika has seen (a grey ring).
+    story(ana, 5, "photo", "Sunrise on the way to work.", picture=sunrise_picture())
+    bens = story(ben, 7, text="Who else is ready for Saturday? Mt. Batulao, here we come!", background="teal")
+    s.add(StoryView(story_id=bens.id, viewer_id=mika.id, viewed_at=ago(moment, hours=6)))
+    # Carlo: for his Close Friends only, and Mika is on his list.
+    s.add(CloseFriend(owner_id=carlo.id, friend_id=mika.id))
+    story(carlo, 2, text="Close friends only: the new Kalye Coffee cups arrive tomorrow!", background="orange",
+          audience="close")
+    # Dana: Mika muted her stories (Settings > Privacy > Muted Stories shows her).
+    story(dana, 4, text="Snacks for the hike: done.", background="blue")
+    s.add(StoryMute(user_id=mika.id, muted_id=dana.id))
+
+    # Mika's own: seen by four, Ben's heart, and Carlo's private reply in their chat.
+    mine = story(mika, 3, text="Sketching the Kalye Coffee cups today.", background="purple")
+    for minutes, person in ((170, ana), (150, ben), (125, carlo), (60, dana)):
+        s.add(StoryView(story_id=mine.id, viewer_id=person.id, viewed_at=ago(moment, minutes=minutes)))
+    s.add(StoryReaction(story_id=mine.id, user_id=ben.id, emoji="❤️", created_at=ago(moment, minutes=149)))
+    with_carlo = s.scalar(select(Conversation).where(Conversation.demo_team_id == team.id, Conversation.kind == "dm",
+                                                     Conversation.title.is_(None), Conversation.created_by_id == carlo.id))
+    answer = say(s, with_carlo, carlo, "Those cups look great! Can I see the blue one?", ago(moment, minutes=124))
+    answer.story_id, answer.is_story_reply = mine.id, True
+    read_up_to(s, with_carlo, mika)
+    read_up_to(s, with_carlo, carlo)
+    # Mika's Close Friends: Ana and Ben.
+    for person in (ana, ben):
+        s.add(CloseFriend(owner_id=mika.id, friend_id=person.id))
+    s.flush()
+
+
+fillers.append(sample_stories)
+
+
 CHECKLIST = """Website launch checklist (Papel Studio)
 
 [x] Buy the domain
@@ -257,6 +309,26 @@ def palette_picture():
     for index, colour in enumerate(colours):
         draw.rectangle([index * width, 0, (index + 1) * width, 330], fill=colour)
         draw.text((index * width + 18, 360), colour.upper(), fill="#13263b")
+    out = io.BytesIO()
+    picture.save(out, "PNG")
+    return out.getvalue()
+
+
+def sunrise_picture():
+    """Ana's story photo: a sunrise over hills, drawn with Pillow (PNG bytes, 9:16)."""
+    import io
+
+    from PIL import Image, ImageDraw
+    width, height = 540, 960
+    picture = Image.new("RGB", (width, height))
+    draw = ImageDraw.Draw(picture)
+    top, bottom = (255, 183, 120), (233, 98, 120)
+    for y in range(height):
+        mix = y / height
+        draw.line([(0, y), (width, y)], fill=tuple(round(a + (b - a) * mix) for a, b in zip(top, bottom)))
+    draw.ellipse([170, 420, 370, 620], fill="#fff1c9")
+    draw.polygon([(0, 640), (150, 520), (300, 610), (430, 500), (540, 580), (540, 960), (0, 960)], fill="#7d3c6b")
+    draw.polygon([(0, 760), (200, 650), (380, 740), (540, 680), (540, 960), (0, 960)], fill="#4a2350")
     out = io.BytesIO()
     picture.save(out, "PNG")
     return out.getvalue()

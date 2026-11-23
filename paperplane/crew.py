@@ -9,7 +9,10 @@ teammates through the REAL code paths, exactly like people would:
 - they read (chats.mark_read), type (the same "typing" event) and send
   (chats.send_message), so every live event goes out through the outbox;
 - they answer the visitor's messages after a short, human-looking wait, and
-  say a few scripted lines on their own.
+  say a few scripted lines on their own;
+- when the visitor posts a story, a teammate who may see it opens it a few
+  seconds later and reacts (stories.mark_seen / stories.react), so Seen by
+  changes live.
 
 Nothing here touches the database or sockets in a special way: if the crew
 works, the app works.
@@ -30,7 +33,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
-from . import chats, db, outbox
+from . import chats, db, outbox, stories
 from .dates import utcnow
 from .hub import Connection
 from .models import Conversation, Membership, User
@@ -71,6 +74,7 @@ REPLIES = [
     (("?",),
      ["Good question. Let me check and get back to you.", "Hmm, I think so!", "Not sure yet. I'll ask Ana."]),
 ]
+STORY_REACTIONS = ["\u2764\ufe0f", "\U0001f602", "\U0001f62e", "\U0001f44d"]
 FALLBACK = ["Nice!", "Got it.", "Haha, true.", "Sounds good to me.", "Okay, noted!", "I'll take a look later."]
 
 # What happens by itself once a visitor arrives: (seconds after, action, who, chat title, words).
@@ -103,6 +107,7 @@ class Job:
     who: int = field(compare=False)            # the teammate's user id
     chat_id: int | None = field(compare=False, default=None)
     words: str | None = field(compare=False, default=None)
+    story_id: int | None = field(compare=False, default=None)
 
 
 class TeamPlay:
@@ -118,9 +123,9 @@ class TeamPlay:
         self.replying = set()    # chats with a reply on its way (one at a time per chat)
         self.order = 0
 
-    def add(self, due, action, who, chat_id=None, words=None):
+    def add(self, due, action, who, chat_id=None, words=None, story_id=None):
         self.order += 1
-        self.jobs.append(Job(due, self.order, action, who, chat_id, words))
+        self.jobs.append(Job(due, self.order, action, who, chat_id, words, story_id))
 
 
 class Crew:
@@ -133,12 +138,17 @@ class Crew:
         self.teams = {}       # team id -> TeamPlay
         self.team_of = {}     # user id -> demo team id (or None): people don't change teams
         self.heard_queue = deque()
+        self.posted_queue = deque()
 
     # ---------- What happened ----------
 
     def heard(self, team_id, chat_id, sender_id, text):
         """A real person sent a message in a demo (chats.after_send_hooks)."""
         self.heard_queue.append((team_id, chat_id, sender_id, text))
+
+    def posted(self, team_id, story_id, audience):
+        """A real person posted a story in a demo (stories.after_post_hooks)."""
+        self.posted_queue.append((team_id, story_id, audience))
 
     # ---------- Who is here ----------
 
@@ -175,6 +185,8 @@ class Crew:
                         self.stop(team_id)
                 while self.heard_queue:
                     self.plan_reply(s, *self.heard_queue.popleft(), now)
+                while self.posted_queue:
+                    self.plan_look(s, *self.posted_queue.popleft(), now)
             finally:
                 s.close()
             for play in list(self.teams.values()):
@@ -226,6 +238,22 @@ class Crew:
         play.add(now + wait - 2.5, "typing", mate.id, chat_id)
         play.add(now + wait, "reply", mate.id, chat_id, reply_for(text, play.rng))
 
+    def plan_look(self, s, team_id, story_id, audience, now):
+        """Ana (or the first teammate who may see it) opens the new story, then reacts."""
+        play = self.teams.get(team_id)
+        if play is None:
+            return
+        mates = s.scalars(select(User).where(User.demo_team_id == team_id, User.is_bot.is_(True),
+                                             User.id.in_(audience or [0])).order_by(User.id)).all()
+        mates = [mate for mate in mates if not self.has_real_tab(mate.id)]
+        if not mates:
+            return
+        mate = next((mate for mate in mates if mate.handle == "ana"), mates[0])
+        if mate.id not in play.tabs:
+            play.add(now + 3.0, "online", mate.id)
+        play.add(now + 4.0, "look", mate.id, story_id=story_id)
+        play.add(now + 6.0, "react", mate.id, words=play.rng.choice(STORY_REACTIONS), story_id=story_id)
+
     # ---------- Doing things, through the real code ----------
 
     def run(self, play, job):
@@ -247,6 +275,10 @@ class Crew:
                 self.with_session(lambda s: chats.mark_read(s, s.get(User, job.who), job.chat_id))
             elif job.action in ("say", "reply"):
                 self.with_session(lambda s: self.say(s, job.who, job.chat_id, job.words))
+            elif job.action == "look":
+                self.with_session(lambda s: self.look(s, job.who, job.story_id))
+            elif job.action == "react":
+                self.with_session(lambda s: stories.react(s, s.get(User, job.who), job.story_id, job.words, utcnow()))
         except Exception:
             # A teammate left a chat, the demo was deleted under us...: skip this line.
             pass
@@ -289,6 +321,10 @@ class Crew:
         chats.mark_read(s, user, chat_id)
         chats.send_message(s, user, chat_id, words, None, utcnow())
 
+    def look(self, s, user_id, story_id):
+        viewer = s.get(User, user_id)
+        stories.mark_seen(s, viewer, stories.load_visible(s, viewer, story_id, utcnow()), utcnow())
+
     # ---------- The thread ----------
 
     def start_thread(self):
@@ -312,6 +348,19 @@ def notice(s, conversation, message, moment):
         crew.heard(conversation.demo_team_id, conversation.id, message.sender_id, message.body)
 
 
+def story_posted(s, story, moment):
+    """stories.after_post_hooks: a real person posted a story in a demo; a teammate will look."""
+    if s.info.get("crew"):
+        return
+    owner = s.get(User, story.user_id)
+    if owner is None or owner.demo_team_id is None or owner.is_bot:
+        return
+    app = s.info.get("app")
+    crew = app.extensions.get(KEY) if app else None
+    if crew is not None:
+        crew.posted(owner.demo_team_id, story.id, stories.audience_of(s, story))
+
+
 def get(app):
     return app.extensions[KEY]
 
@@ -322,5 +371,7 @@ def init_app(app):
     app.extensions[KEY] = crew
     if notice not in chats.after_send_hooks:
         chats.after_send_hooks.append(notice)
+    if story_posted not in stories.after_post_hooks:
+        stories.after_post_hooks.append(story_posted)
     if app.config.get("RUN_CREW"):
         crew.start_thread()

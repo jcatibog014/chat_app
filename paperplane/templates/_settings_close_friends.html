@@ -1,0 +1,23 @@
+{% from "_macros.html" import avatar, csrf %}
+<section class="card" id="close-friends">
+  <h2>Close Friends</h2>
+  <p class="muted">Stories you share with Close Friends go only to the people ticked here. Nobody is told they're on it.</p>
+  {% if story_contacts %}
+    <form method="post" class="stack" data-watch-changes>
+      {{ csrf() }}
+      <input type="hidden" name="action" value="close_friends">
+      <fieldset class="pick-people close-friends">
+        <legend class="visually-hidden">Close Friends</legend>
+        {% for person in story_contacts %}
+          <label class="check person-check">
+            <input type="checkbox" name="friend" value="{{ person.id }}"{% if person.id in close_ids %} checked{% endif %}>
+            {{ avatar(person, 'small') }} <span>{{ person.name }} <span class="hint">@{{ person.handle }}</span></span>
+          </label>
+        {% endfor %}
+      </fieldset>
+      <div class="form-actions start"><button class="button" type="submit">Save Close Friends</button></div>
+    </form>
+  {% else %}
+    <p class="muted">Once you chat with people, you can pick your Close Friends here.</p>
+  {% endif %}
+</section>

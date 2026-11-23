@@ -264,7 +264,7 @@ def announce_new_chat(s, conversation, user_ids):
 
 # ---------- Sending ----------
 
-def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=None, upload=None):
+def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=None, upload=None, story_id=None):
     """Save a message and send it to every member. Returns (message, was_already_sent).
 
     The same client_id twice (a reconnect re-sending, a double click) gives back the
@@ -290,7 +290,8 @@ def send_message(s, me, conversation_id, body, client_id, moment, reply_to_id=No
     seq, version = bump(s, conversation, moment, new_message=True)
     message = Message(conversation_id=conversation.id, seq=seq, sender_id=me.id, client_id=client_id,
                       kind="text", body=body, created_at=moment, version=version,
-                      reply_to_id=target.id if target else None)
+                      reply_to_id=target.id if target else None,
+                      story_id=story_id, is_story_reply=story_id is not None)
     try:
         with s.begin_nested():
             s.add(message)
