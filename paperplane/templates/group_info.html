@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import page_head, avatar, csrf, field, switch %}
 {% from "_icons.html" import icon %}
+{% from "_media_card.html" import media_card %}
 {% block title %}{{ conversation.title }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
   {{ page_head('Group Info', back=url_for('chats.show', chat_id=conversation.id), back_label='Back to the chat') }}
@@ -88,6 +89,7 @@
     </div>
 
     <div class="info-side">
+      {{ media_card(conversation, media_numbers, latest_photos) }}
       {% if can('add_people') %}
       <section class="card" id="add">
         <h2>Add People</h2>

@@ -26,6 +26,7 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Blocking | Block someone: neither of you can message the other, or see the other online. |
 | Pictures and files | Send pictures and files (up to 5 MB). Pictures lose their hidden details (like where a photo was taken). |
 | Link previews | A web address in a message gets a small card with the page's title. |
+| Photos, Files and Links | Every chat keeps a history of the pictures, files and links sent in it, newest first, one tab each. |
 | Find | Search the words in all your chats. |
 | Mentions | Write @name in a group. That person gets a red @ and a notification. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
@@ -93,6 +94,16 @@ Each time you post, you choose who can see it: **everyone you chat with**, or on
 | ![Making a text card](docs/screenshots/story-new.png) | ![Carlo's reply to Mika's story](docs/screenshots/story-reply.png) |
 
 Only people you chat with can see your stories, and someone you block can't see them at all. Only you can see who saw your story. If you don't want to see someone's stories, open one and choose **More**, then **Mute**. They aren't told.
+
+### Photos, Files and Links
+
+Every chat keeps the pictures, files and links sent in it. Open the chat's info (the **i** at the top of the chat): the latest photos are there, with how many photos, files and links the chat has. **See all** shows them, one tab each, newest first. **Show in chat** takes you to the message they came with.
+
+| Photos | Links |
+| --- | --- |
+| ![The photos sent in Papel Studio](docs/screenshots/media-photos.png) | ![The links sent in Weekend Hike](docs/screenshots/media-links.png) |
+
+You only see what you could read in the chat itself: if a group hides its earlier messages from new members, it hides their photos, files and links too. A deleted message takes its picture, file or link with it.
 
 ### Search, Your Profile and Settings
 

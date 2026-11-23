@@ -74,6 +74,29 @@ URL = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
 TRAILING = ".,!?;:)]}'\""
 
 
+def link_spans(text):
+    """(start, end, url) for each web address in the text, the way linkify() sees them:
+    "see https://example.com." -> the dot isn't part of the address."""
+    for match in URL.finditer(text or ""):
+        url = match.group(0)
+        while url and url[-1] in TRAILING:
+            if url[-1] == ")" and url.count("(") >= url.count(")"):
+                break
+            url = url[:-1]
+        if len(url) < 12:
+            continue
+        yield match.start(), match.start() + len(url), url
+
+
+def find_links(text):
+    """The web addresses in a message, in order, each once (the Links tab, media.py)."""
+    seen = []
+    for _start, _end, url in link_spans(text):
+        if url not in seen:
+            seen.append(url)
+    return seen
+
+
 def linkify(text):
     """A message as safe HTML: everything escaped, web addresses made into links.
 
@@ -83,16 +106,7 @@ def linkify(text):
     tells search engines a user wrote it."""
     out = []
     position = 0
-    for match in URL.finditer(text or ""):
-        url = match.group(0)
-        # "see https://example.com." -> the dot isn't part of the address.
-        while url and url[-1] in TRAILING:
-            if url[-1] == ")" and url.count("(") >= url.count(")"):
-                break
-            url = url[:-1]
-        if len(url) < 12:
-            continue
-        start, end = match.start(), match.start() + len(url)
+    for start, end, url in link_spans(text):
         out.append(mentions(escape(text[position:start])))
         out.append(Markup('<a href="{0}" target="_blank" rel="noopener noreferrer nofollow ugc">{0}</a>').format(url))
         position = end

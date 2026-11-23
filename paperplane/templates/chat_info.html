@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import page_head, avatar, csrf %}
 {% from "_icons.html" import icon %}
+{% from "_media_card.html" import media_card %}
 {% block title %}{{ other.name }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
   {{ page_head('Chat Info', back=url_for('chats.show', chat_id=conversation.id), back_label='Back to the chat') }}
@@ -35,4 +36,5 @@
       {% endif %}
     </div>
   </section>
+  <div class="narrow-card top-gap">{{ media_card(conversation, media_numbers, latest_photos) }}</div>
 {% endblock %}

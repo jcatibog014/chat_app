@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, empty %}
+{% from "_icons.html" import icon %}
+{# A chat's history of photos, files and links: one tab each (plain links, so it works
+   without JavaScript), newest first, "Show older" for the next page (media.py). #}
+{% block title %}Photos, Files and Links - {{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Photos, Files and Links', back=url_for('groups.info', chat_id=conversation.id),
+               back_label='Back to ' ~ ('group' if conversation.is_group else 'chat') ~ ' info') }}
+  <p class="muted media-chat">In {{ title }}</p>
+  <nav class="media-tabs" aria-label="Photos, files and links">
+    {% for name in ('photos', 'files', 'links') %}
+      <a href="{{ url_for('groups.media_page', chat_id=conversation.id, tab=name) }}"{% if name == tab %} aria-current="page"{% endif %}>
+        {{ tab_names[name] }} <span class="media-count">{{ numbers[name] }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% macro in_chat(message) -%}
+    {{ url_for('chats.show', chat_id=conversation.id, before=message.seq + 20) }}#m-{{ message.id }}
+  {%- endmacro %}
+  {% macro who(message) -%}
+    {{ ('You' if message.sender_id == g.user.id else message.sender.name) if message.sender else 'Someone' }}
+  {%- endmacro %}
+
+  {% if not items %}
+    {{ empty('No ' ~ tab_names[tab] ~ ' Yet',
+             {'photos': 'Pictures sent in this chat show here.',
+              'files': 'Files sent in this chat show here.',
+              'links': 'Web addresses sent in this chat show here.'}[tab]) }}
+  {% elif tab == 'photos' %}
+    <ul class="media-grid">
+      {% for attachment, message in items %}
+        <li>
+          <a class="media-photo" href="{{ url_for('files.show', attachment_id=attachment.id) }}" title="{{ attachment.filename }}" target="_blank" rel="noopener">
+            <img src="{{ url_for('files.thumb', attachment_id=attachment.id) }}" alt="Picture from {{ who(message) }}" width="200" height="200" loading="lazy">
+          </a>
+          <a class="media-photo-info" href="{{ in_chat(message) }}">{{ who(message) }} · {{ message.created_at|short_when }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif tab == 'files' %}
+    <ul class="card media-list">
+      {% for attachment, message in items %}
+        <li>
+          <span class="media-icon">{{ icon('file', 22) }}</span>
+          <span class="media-text">
+            <strong>{{ attachment.filename }}</strong>
+            <small>{{ attachment.size|human_size }} · {{ who(message) }} · {{ message.created_at|short_when }}</small>
+          </span>
+          <a class="button button-quiet button-small" href="{{ in_chat(message) }}">Show in chat</a>
+          <a class="icon-button" href="{{ url_for('files.show', attachment_id=attachment.id) }}" title="Download {{ attachment.filename }}" download>{{ icon('download', 18) }}<span class="visually-hidden">Download {{ attachment.filename }}</span></a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <ul class="card media-list">
+      {% for link in items %}
+        <li>
+          <span class="media-icon">{{ icon('link', 20) }}</span>
+          <span class="media-text">
+            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow ugc"><strong>{{ link.title or link.host }}</strong></a>
+            {% if link.description %}<span class="media-description">{{ link.description }}</span>{% endif %}
+            <small>{{ link.site_name or link.host }} · {{ who(link.message) }} · {{ link.created_at|short_when }}</small>
+          </span>
+          <a class="button button-quiet button-small" href="{{ in_chat(link.message) }}">Show in chat</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  {% if older %}
+    <p class="media-more"><a class="button button-quiet" href="{{ url_for('groups.media_page', chat_id=conversation.id, tab=tab, before=older) }}">Show older</a></p>
+  {% endif %}
+{% endblock %}

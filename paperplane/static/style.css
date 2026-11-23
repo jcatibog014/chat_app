@@ -754,6 +754,44 @@ details.fold[open] { flex: 1 1 100%; }
 .result-who { color: var(--ink); font-weight: 600; }
 .result-body mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); border-radius: 3px; padding: 0 .1rem; }
 
+/* ---------- Photos, Files and Links (a chat's history; chat info and its own page) ---------- */
+.media-strip { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; gap: .4rem; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); }
+.media-strip a, .media-photo { display: block; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-small); background: var(--surface-soft); }
+.media-strip img, .media-photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .2s; }
+.media-strip a:hover img, .media-photo:hover img { transform: scale(1.04); }
+.media-kinds { list-style: none; margin: 0; padding: 0; }
+.media-kinds li + li { border-top: 1px solid var(--rule); }
+.media-kinds a { display: flex; align-items: center; gap: .7rem; min-height: 2.9rem; padding: .3rem .2rem; color: var(--ink); text-decoration: none; }
+.media-kinds a:hover { color: var(--link); }
+.media-kinds a > svg:first-child { color: var(--link); flex: 0 0 auto; }
+.media-kinds span { flex: 1 1 auto; font-weight: 600; }
+.media-kinds strong { color: var(--muted); font-weight: 600; }
+.media-kinds a > svg:last-child { color: var(--muted); }
+.media-chat { margin: -.4rem 0 1rem; }
+.media-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.25rem; }
+.media-tabs a { display: inline-flex; align-items: center; gap: .45rem; min-height: var(--control-height); padding: 0 1rem; border: 1px solid var(--rule);
+  border-radius: 99px; background: var(--surface); color: var(--ink); font-weight: 600; text-decoration: none; }
+.media-tabs a:hover { border-color: var(--control-border); color: var(--ink); }
+.media-tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.media-count { min-width: 1.5rem; padding: 0 .4rem; border-radius: 99px; background: var(--surface-soft); color: var(--muted); font-size: .8rem; text-align: center; }
+.media-tabs a[aria-current="page"] .media-count { background: rgb(255 255 255 / .25); color: var(--on-accent); }
+.media-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); }
+@media (max-width: 40rem) { .media-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; } }
+.media-photo-info { display: block; margin-top: .35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8rem; color: var(--muted); text-decoration: none; }
+.media-photo-info:hover { color: var(--link); text-decoration: underline; }
+.media-list { list-style: none; margin: 0; padding: .3rem 1rem; }
+.media-list li { display: flex; align-items: center; gap: .8rem; padding: .75rem 0; }
+.media-list li + li { border-top: 1px solid var(--rule); }
+.media-icon { display: grid; place-items: center; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; border-radius: var(--radius-small); background: var(--accent-soft); color: var(--link); }
+.media-text { flex: 1 1 auto; min-width: 0; display: grid; gap: .1rem; }
+.media-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-text a { color: var(--link); text-decoration: none; min-width: 0; overflow: hidden; }
+.media-text a:hover { text-decoration: underline; }
+.media-text small { color: var(--muted); }
+.media-description { color: var(--muted); font-size: .88rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 40rem) { .media-list li { flex-wrap: wrap; } .media-list .button { margin-left: 3.3rem; } }
+.media-more { margin-top: 1.25rem; text-align: center; }
+
 /* ---------- Stories ---------- */
 
 /* The circles above the chat list. A ring in the app's colour: something new; grey: all seen. */

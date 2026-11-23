@@ -132,6 +132,14 @@ def main():
         page.wait_for_load_state("networkidle")
         shot(page, "chat-info")
 
+        # A chat's history: Photos, Files and Links (from chat info's "See all").
+        open_chat(page, "Papel Studio")
+        page.goto(page.url.split("#")[0].split("?")[0] + "/media")
+        shot(page, "media-photos")
+        open_chat(page, "Weekend Hike")
+        page.goto(page.url.split("#")[0].split("?")[0] + "/media?tab=links")
+        shot(page, "media-links")
+
         page.goto(BASE + "/chats/new")
         shot(page, "new-chat")
         page.goto(BASE + "/search?q=mockups")
