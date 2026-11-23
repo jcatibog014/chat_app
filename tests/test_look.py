@@ -53,6 +53,18 @@ def test_avatar_tones_carry_white_letters():
         assert contrast("#ffffff", colour) >= 4.5, colour
 
 
+def test_the_owners_logo_and_every_icon_are_there(client):
+    """The logo is the owner's picture (docs/logo), drawn into the icons by docs/make_icons.py."""
+    root = Path(__file__).parent.parent
+    assert (root / "docs" / "logo" / "paper-plane-logo.webp").exists()
+    for name in ("logo.png", "icon-32.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
+                 "icon-maskable-512.png", "favicon.ico"):
+        assert (root / "paperplane" / "static" / "icons" / name).exists(), name
+    page = client.get("/login").get_data(as_text=True)
+    assert "icons/logo.png" in page and "favicon.svg" not in page
+    assert client.get("/static/icons/logo.png").mimetype == "image/png"
+
+
 def test_no_inline_styles_or_scripts_in_templates():
     """The CSP forbids them, so the browser would ignore them."""
     for template in (Path(__file__).parent.parent / "paperplane" / "templates").glob("*.html"):

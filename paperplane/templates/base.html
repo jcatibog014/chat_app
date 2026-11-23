@@ -7,7 +7,8 @@
   <meta name="description" content="Paper Plane: a real-time chat app with direct messages, group chats, unread counts and online presence.">
   <link rel="preload" href="{{ url_for('static', filename='fonts/inter-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='fonts/outfit-latin-700-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/favicon.svg') }}">
+  <link rel="preload" href="{{ url_for('static', filename='icons/logo.png') }}" as="image">
+  <link rel="icon" href="{{ url_for('static', filename='icons/favicon.ico') }}" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-32.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
