@@ -23,23 +23,7 @@ function setUpTheme() {
   });
 }
 
-// The menu button on phones.
-function setUpMenu() {
-  const button = document.querySelector("[data-menu-button]");
-  const menu = document.getElementById(button && button.getAttribute("aria-controls"));
-  if (!button || !menu) return;
-  button.hidden = false;
-  const setOpen = (open) => {
-    button.setAttribute("aria-expanded", open);
-    menu.classList.toggle("is-open", open);
-  };
-  button.addEventListener("click", () => setOpen(button.getAttribute("aria-expanded") !== "true"));
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setOpen(false);
-  });
-}
-
-// <details> menus (the account menu, the Demo tag) close on an outside click or Escape.
+// <details> menus (the profile menu, the Demo tag) close on an outside click or Escape.
 function setUpPopovers() {
   const menus = () => document.querySelectorAll("details[data-popover][open]");
   document.addEventListener("click", (event) => {
@@ -235,6 +219,6 @@ function setUpWatchChanges() {
 }
 
 // Startup: every part looks for its own elements and does nothing if they aren't on the page.
-const setUps = [setUpToasts, setUpWatchChanges, setUpInstall, setUpTheme, setUpMenu, setUpPopovers,
+const setUps = [setUpToasts, setUpWatchChanges, setUpInstall, setUpTheme, setUpPopovers,
   setUpConfirm, setUpAutoSubmit, setUpCopy];
 document.addEventListener("DOMContentLoaded", () => setUps.forEach((setUp) => setUp()));

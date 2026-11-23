@@ -25,6 +25,15 @@ def team(app):
     return {"ids": ids, "chats": chat_ids, "client": {name: browser(app, user_id) for name, user_id in ids.items()}}
 
 
+def results_of(response):
+    """Only the search results (the chat list beside them shows message previews too)."""
+    import html
+    import re
+    page = response.get_data(as_text=True)
+    part = page.split('class="muted result-count"', 1)[1] if 'class="muted result-count"' in page else ""
+    return " ".join(re.sub(r"<[^>]+>", " ", html.unescape(part)).split())
+
+
 def send(team, who, where, body):
     return post(team["client"][who], f"/chats/{team['chats'][where]}/send", {"body": body})
 
@@ -34,9 +43,9 @@ def send(team, who, where, body):
 def test_search_finds_words_in_my_chats_only(app, team):
     send(team, "ana", "group", "The coffee logo is ready")
     send(team, "ana", "dm", "Secret: the coffee is free on Friday")
-    found = words(team["client"]["ben"].get("/search?q=coffee"))
+    found = results_of(team["client"]["ben"].get("/search?q=coffee"))
     assert "The coffee logo is ready" in found and "free on Friday" not in found  # Ben isn't in the DM
-    found = words(team["client"]["maria"].get("/search?q=COFFEE"))
+    found = results_of(team["client"]["maria"].get("/search?q=COFFEE"))
     assert "2 messages" in found
     assert "Nothing in your chats" in words(team["client"]["zed"].get("/search?q=coffee"))
 
@@ -51,14 +60,14 @@ def test_search_marks_the_words_and_links_to_the_message(app, team):
 def test_search_treats_wildcards_as_plain_letters(app, team):
     send(team, "ana", "group", "Half off: 50% today")
     send(team, "ana", "group", "500 people came")
-    found = words(team["client"]["maria"].get("/search?q=50%25"))
+    found = results_of(team["client"]["maria"].get("/search?q=50%25"))
     assert "50% today" in found and "500 people" not in found
 
 
 def test_search_in_one_chat_and_skips_deleted_and_hidden_history(app, team):
     send(team, "ana", "group", "pineapple in the group")
     send(team, "ana", "dm", "pineapple in the dm")
-    found = words(team["client"]["maria"].get(f"/search?q=pineapple&chat={team['chats']['dm']}"))
+    found = results_of(team["client"]["maria"].get(f"/search?q=pineapple&chat={team['chats']['dm']}"))
     assert "in the dm" in found and "in the group" not in found
     assert "Type a Little More" in words(team["client"]["maria"].get("/search?q=p"))
 

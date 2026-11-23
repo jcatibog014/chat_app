@@ -1,9 +1,10 @@
-{% extends "base.html" %}
-{% from "_macros.html" import page_head, avatar, csrf, field %}
+{% extends "_chat_panel.html" %}
+{% from "_macros.html" import avatar, csrf, field %}
 {% from "_icons.html" import icon %}
+{% set panel_title = 'New Chat' %}
+{% set pane = 'new' %}
 {% block title %}New Chat - {{ APP_NAME }}{% endblock %}
-{% block content %}
-  {{ page_head('New Chat') }}
+{% block panel %}
   <div class="new-chat">
     <section class="card" id="message-someone">
       <h2>Message Someone</h2>
@@ -24,7 +25,7 @@
                 <input type="hidden" name="person" value="{{ person.id }}">
                 <button type="submit" class="person-button">
                   {{ avatar(person, presence=presence_of(person)) }}
-                  <span><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></span>
+                  <span class="person-text"><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></span>
                   {{ icon('arrow', 18) }}
                 </button>
               </form>

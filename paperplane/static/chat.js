@@ -75,10 +75,11 @@
 
   function setTotal(count) {
     total = Math.max(0, count);
-    if (totalBadge) {
-      totalBadge.textContent = total;
-      totalBadge.hidden = total === 0;
-    }
+    // The sky's Chats link and the phone's bottom bar both show it.
+    document.querySelectorAll("[data-total-unread]").forEach((badge) => {
+      badge.textContent = total;
+      badge.hidden = total === 0;
+    });
     document.title = total > 0 ? `(${total}) ${baseTitle}` : baseTitle;
   }
 

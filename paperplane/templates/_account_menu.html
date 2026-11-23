@@ -1,0 +1,28 @@
+{% from "_macros.html" import avatar, csrf %}
+{% from "_icons.html" import icon %}
+{# The profile menu: click your picture (bottom of the sky on a computer, the bottom bar on a
+   phone) and it opens: who you are, Settings, and Log out (the owner's choice: no Settings
+   link in the menus). A <details>: it opens without JavaScript; app.js closes it on an outside
+   click or Escape. #}
+{% macro account_items() %}
+  <div class="account-items" role="menu">
+    <div class="account-who">
+      {{ avatar(g.user) }}
+      <div>
+        <strong>{{ g.user.name }}</strong>
+        <small>@{{ g.user.handle }}</small>
+      </div>
+    </div>
+    {% if g.user.is_demo %}
+      <p class="account-demo"><span class="demo-chip">Demo</span> A sample team, just for you. Everything is deleted 24 hours after you started.</p>
+    {% endif %}
+    <a class="menu-item" role="menuitem" href="{{ url_for('settings.page') }}">{{ icon('settings', 18) }} Settings</a>
+    {% if g.user.is_demo and not g.user.is_bot and has_page('demo.friends') %}
+      <a class="menu-item" role="menuitem" href="{{ url_for('demo.friends') }}">{{ icon('person', 18) }} Invite a friend</a>
+    {% endif %}
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      {{ csrf() }}
+      <button class="menu-item" role="menuitem" type="submit">{{ icon('leave', 18) }} {{ 'Leave the demo' if g.user.is_demo else 'Log out' }}</button>
+    </form>
+  </div>
+{% endmacro %}

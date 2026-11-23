@@ -1,9 +1,10 @@
-{% extends "base.html" %}
-{% from "_macros.html" import page_head, avatar, empty %}
+{% extends "_chat_panel.html" %}
+{% from "_macros.html" import avatar, empty %}
 {% from "_icons.html" import icon %}
+{% set panel_title = 'Search' %}
+{% set pane = 'search' %}
 {% block title %}Search - {{ APP_NAME }}{% endblock %}
-{% block content %}
-  {{ page_head('Search') }}
+{% block panel %}
   <form class="search-row" method="get" action="{{ url_for('search.page') }}" role="search">
     <label class="search-box">
       <span class="visually-hidden">Search your messages</span>

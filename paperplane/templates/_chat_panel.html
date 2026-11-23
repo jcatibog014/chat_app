@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{# New Chat and Search open INSIDE the chat page: the list of chats on the left, the panel on the
+   right where a chat would be. On a phone the panel fills the screen, with a back arrow to the list.
+   Pages set: panel_title, pane ("new" / "search"), and the block "panel". #}
+{% block body_class %}chat-body has-open{% endblock %}
+{% block page_class %}chat-page{% endblock %}
+{% block content %}
+<div class="chat-layout">
+  {% include "_chat_list_pane.html" %}
+  <section class="conversation side-panel" aria-labelledby="panel-title">
+    <header class="conversation-head">
+      <a class="icon-button back-to-list" href="{{ url_for('chats.index') }}" title="All chats">{{ icon('back', 20) }}<span class="visually-hidden">All chats</span></a>
+      <div class="conversation-title"><h2 id="panel-title">{{ panel_title }}</h2></div>
+      <a class="icon-button close-panel" href="{{ url_for('chats.index') }}" title="Close">{{ icon('x', 20) }}<span class="visually-hidden">Close</span></a>
+    </header>
+    <div class="panel-body">
+      {% block panel %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

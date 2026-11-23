@@ -1,18 +1,16 @@
 {% from "_icons.html" import logo, icon %}
-{% from "_macros.html" import avatar, csrf %}
+{% from "_macros.html" import avatar %}
+{% from "_account_menu.html" import account_items %}
 {% set page = request.endpoint or '' %}
-{% set section = page.split('.')[0] %}
-{# One menu entry. It shows only once its part of the app exists. #}
-{% macro link(endpoint, label, icon_name, here) %}
-  {% if has_page(endpoint) %}
-  <li><a href="{{ url_for(endpoint) }}"{% if here %} aria-current="page"{% endif %}>{{ icon(icon_name, 20) }} <span class="side-label">{{ label }}</span>{% if caller %}{{ caller() }}{% endif %}</a></li>
-  {% endif %}
-{% endmacro %}
-{# The sky: a blue sidebar with soft clouds drawn in CSS (a night sky with stars in dark mode). #}
+{% set unread = unread_total() %}
+{# On a computer: the sky on the left, with the logo, Chats, and your picture at the bottom
+   (it opens the profile menu: Settings, Log out). New Chat and Search are buttons in the chat
+   list, not menu entries (the owner's choice).
+   On a phone there's no sidebar or header: a bar at the BOTTOM with Chats and your picture. #}
 <aside class="sidebar sky">
  <div class="sidebar-inner">
   <div class="sidebar-top">
-    <a class="logo" href="{{ url_for('chats.index') }}">{{ logo(34, 'side-logo') }} <span>{{ APP_NAME }}</span></a>
+    <a class="logo" href="{{ url_for('chats.index') }}">{{ logo(34) }} <span>{{ APP_NAME }}</span></a>
     {% if g.user.is_demo %}
     <details class="demo-tag" data-popover>
       <summary title="About the demo">Demo</summary>
@@ -22,36 +20,39 @@
       </div>
     </details>
     {% endif %}
-    <button class="menu-button" type="button" data-menu-button aria-expanded="false" aria-controls="side-nav" aria-label="Menu" hidden>
-      {{ icon('menu', 22) }}
-    </button>
   </div>
-  <div class="sidebar-menu" id="side-nav">
+  <div class="sidebar-menu">
     <nav aria-label="Main">
       <ul class="side-links">
-        {% call link('chats.index', 'Chats', 'chats', section == 'chats' and page != 'chats.new') %}{% set unread = unread_total() %}<span class="count" data-total-unread{% if not unread %} hidden{% endif %}>{{ unread }}</span>{% endcall %}
-        {{ link('chats.new', 'New Chat', 'new-chat', page == 'chats.new') }}
-        {{ link('search.page', 'Search', 'search', section == 'search') }}
-        {{ link('settings.page', 'Settings', 'settings', section == 'settings') }}
+        <li><a href="{{ url_for('chats.index') }}"{% if page.startswith('chats.') or page == 'search.page' %} aria-current="page"{% endif %}>{{ icon('chats', 20) }} <span class="side-label">Chats</span><span class="count" data-total-unread{% if not unread %} hidden{% endif %}>{{ unread }}</span></a></li>
       </ul>
     </nav>
     <div class="sidebar-foot">
-      {# <details> opens and closes without JavaScript. app.js also closes it on an outside click. #}
       <details class="user-menu" data-popover>
-        <summary>
+        <summary title="Your profile">
           {{ avatar(g.user) }}
-          <span class="user-menu-name"><span><span class="visually-hidden">Account menu for </span>{{ g.user.name }}</span>
+          <span class="user-menu-name"><span><span class="visually-hidden">Profile menu for </span>{{ g.user.name }}</span>
             <small>@{{ g.user.handle }}</small></span>
+          {{ icon('chevron-down', 16) }}
         </summary>
-        <div class="user-menu-items">
-          <a href="{{ url_for('settings.page') }}">Settings</a>
-          <form method="post" action="{{ url_for('auth.logout') }}">
-            {{ csrf() }}
-            <button type="submit">{{ 'Leave the demo' if g.user.is_demo else 'Log out' }}</button>
-          </form>
-        </div>
+        {{ account_items() }}
       </details>
     </div>
   </div>
  </div>
 </aside>
+
+{# The phone's bottom bar: Chats and Profile. Hidden inside an open chat (the chat has a back arrow). #}
+<nav class="bottom-nav" aria-label="Main">
+  <a class="bottom-link" href="{{ url_for('chats.index') }}"{% if page.startswith('chats.') or page == 'search.page' %} aria-current="page"{% endif %}>
+    <span class="bottom-icon">{{ icon('chats', 22) }}<span class="count" data-total-unread{% if not unread %} hidden{% endif %}>{{ unread }}</span></span>
+    <span>Chats</span>
+  </a>
+  <details class="bottom-profile" data-popover>
+    <summary class="bottom-link"{% if page.startswith('settings.') %} aria-current="page"{% endif %}>
+      <span class="bottom-icon">{{ avatar(g.user, 'small') }}</span>
+      <span>Profile</span>
+    </summary>
+    {{ account_items() }}
+  </details>
+</nav>

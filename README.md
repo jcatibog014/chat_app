@@ -10,7 +10,7 @@ You can talk to one person (a direct message) or to a group. You see who is onli
 
 Open the app and click **Try the demo**. You are Mika, a designer at a small studio called Papel Studio. Your teammates (Ana, Ben, Carlo and Dana) are made up, but they come online, type and answer you. The demo is only for you, and it is deleted after 24 hours.
 
-Want to see two real people chat? Open **Demo** at the top of the menu, then **Invite a friend to play a teammate**. Open the link on your phone or in a private window.
+Want to see two real people chat? Click your picture (at the bottom of the menu, or **Profile** on a phone), then **Invite a friend**. Open the link on your phone or in a private window.
 
 ## What It Can Do
 
@@ -41,7 +41,7 @@ Want to see two real people chat? Open **Demo** at the top of the menu, then **I
 
 ### Chatting Live
 
-Your chats, newest first. Bold chats have unread messages. A grey number means the chat is muted. A red @ means someone mentioned you.
+Your chats, newest first. Bold chats have unread messages. A grey number means the chat is muted. A red @ means someone mentioned you. The two buttons above the list open **Search** and **New Chat** on the right side of the same page.
 
 ![The chat list](docs/screenshots/chats.png)
 
@@ -71,11 +71,15 @@ You send a message. Ana reads it ("Seen") and starts typing. Then her answer arr
 | --- | --- |
 | ![Chat info](docs/screenshots/chat-info.png) | ![New chat](docs/screenshots/new-chat.png) |
 
-### Search and Settings
+### Search, Your Profile and Settings
 
 | Search | Settings |
 | --- | --- |
 | ![Search](docs/screenshots/search.png) | ![Settings](docs/screenshots/settings.png) |
+
+Click your picture to open your profile menu: Settings, and Log out.
+
+![The profile menu](docs/screenshots/profile-menu.png)
 
 ### Two Real People
 
@@ -91,9 +95,11 @@ Send a friend a link. They play Ben, and the made-up Ben steps aside.
 
 ![Dark mode](docs/screenshots/dark-chat.png)
 
-| Chats on a phone | A chat on a phone |
-| --- | --- |
-| ![The chat list on a phone](docs/screenshots/phone-chats.png) | ![A chat on a phone](docs/screenshots/phone-chat.png) |
+On a phone there is no menu at the top. The bar at the bottom has **Chats** and **Profile**. Inside a chat the bar steps aside, and the arrow takes you back.
+
+| Chats on a phone | Profile on a phone | A chat on a phone |
+| --- | --- | --- |
+| ![The chat list on a phone](docs/screenshots/phone-chats.png) | ![The profile menu on a phone](docs/screenshots/phone-profile.png) | ![A chat on a phone](docs/screenshots/phone-chat.png) |
 
 ## How It Works
 
