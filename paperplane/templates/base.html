@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-accent="{{ accent() }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   {% block head_extra %}{% endblock %}
-  <meta name="theme-color" content="#1f5f9e">
+  <meta name="theme-color" content="{{ theme_colour() }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   {# Before the page draws, so a saved dark theme never flashes light. #}
   <script src="{{ url_for('static', filename='theme.js') }}"></script>

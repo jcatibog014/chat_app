@@ -116,6 +116,17 @@ def main():
         shot(page, "search")
         page.goto(BASE + "/settings")
         shot(page, "settings")
+        page.goto(BASE + "/settings/appearance")
+        shot(page, "appearance")
+        # The same chat in the other colours.
+        for accent in ("purple", "blue"):
+            page.locator(f"input[value={accent}]").check(force=True)
+            page.wait_for_load_state("networkidle")
+            open_chat(page, "Papel Studio")
+            shot(page, f"colour-{accent}")
+            page.goto(BASE + "/settings/appearance")
+        page.locator("input[value=pink]").check(force=True)
+        page.wait_for_load_state("networkidle")
         page.goto(BASE + "/chats")
         page.locator(".user-menu summary").click()
         shot(page, "profile-menu")

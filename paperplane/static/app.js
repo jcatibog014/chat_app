@@ -23,6 +23,19 @@ function setUpTheme() {
   });
 }
 
+// Settings > Appearance: a colour shows at once and is saved to the account (the form's own
+// Save button is for pages without JavaScript).
+function setUpAccent() {
+  const form = document.querySelector("[data-accent-form]");
+  if (!form) return;
+  form.querySelectorAll("[data-accent-choice]").forEach((choice) => {
+    choice.addEventListener("change", () => {
+      document.documentElement.dataset.accent = choice.value;
+      form.requestSubmit();
+    });
+  });
+}
+
 // <details> menus (the profile menu, the Demo tag) close on an outside click or Escape.
 function setUpPopovers() {
   const menus = () => document.querySelectorAll("details[data-popover][open]");
@@ -219,6 +232,6 @@ function setUpWatchChanges() {
 }
 
 // Startup: every part looks for its own elements and does nothing if they aren't on the page.
-const setUps = [setUpToasts, setUpWatchChanges, setUpInstall, setUpTheme, setUpPopovers,
+const setUps = [setUpToasts, setUpWatchChanges, setUpInstall, setUpTheme, setUpAccent, setUpPopovers,
   setUpConfirm, setUpAutoSubmit, setUpCopy];
 document.addEventListener("DOMContentLoaded", () => setUps.forEach((setUp) => setUp()));

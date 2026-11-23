@@ -10,7 +10,21 @@ def tokens(block):
 
 
 def root_block():
-    return CSS.split(":root {", 1)[1].split("\n}", 1)[0]
+    return CSS.split(":root {\n  color-scheme: light;", 1)[1].split("\n}", 1)[0]
+
+
+ACCENTS = ("pink", "purple", "red", "blue")
+
+
+def palette(name):
+    """A palette's --pal-* values (pink is also the default, on plain :root)."""
+    opening = ':root, :root[data-accent="pink"] {' if name == "pink" else f':root[data-accent="{name}"] {{'
+    return tokens(CSS.split(opening, 1)[1].split("}", 1)[0])
+
+
+def resolve(theme, pal):
+    """Put the palette's colours in place of var(--pal-...)."""
+    return {name: pal[value[4:-1]] if value.startswith("var(--pal-") else value for name, value in theme.items()}
 
 
 def dark_blocks():
@@ -36,16 +50,32 @@ def test_both_dark_mode_blocks_are_the_same():
     assert device == chosen
 
 
-def test_text_colours_are_readable_in_both_themes():
-    light = tokens(root_block())
-    dark = {**light, **dark_blocks()[0]}
-    for theme in (light, dark):
+def test_every_palette_has_every_colour():
+    names = set(palette("pink"))
+    assert len(names) == 36  # 18 colours, each for light and dark
+    for accent in ACCENTS:
+        assert set(palette(accent)) == names, accent
+
+
+def test_text_colours_are_readable_in_every_palette_and_both_themes():
+    for accent in ACCENTS:
+        pal = palette(accent)
+        light = resolve(tokens(root_block()), pal)
+        dark = {**light, **resolve(dark_blocks()[0], pal)}
+        for theme in (light, dark):
+            check_theme(theme)
+
+
+def check_theme(theme):
+    if True:
         for ink, ground in [("--ink", "--bg"), ("--ink", "--surface"), ("--muted", "--bg"), ("--muted", "--surface"),
                             ("--muted", "--surface-soft"), ("--link", "--surface"), ("--on-accent", "--accent"),
                             ("--danger", "--surface"), ("--ink", "--bubble-mine"), ("--ink", "--bubble-theirs"),
                             ("--sky-ink", "--sky-top"), ("--sky-ink", "--sky-bottom"), ("--sky-muted", "--sky-top"),
                             ("--on-mention", "--mention"), ("--surface", "--muted"), ("--on-accent", "--accent")]:
             assert contrast(theme[ink], theme[ground]) >= 4.5, (ink, ground, theme[ink], theme[ground])
+        # Outlined controls stand out from the cards (3:1).
+        assert contrast(theme["--control-border"], theme["--surface"]) >= 3, theme["--control-border"]
 
 
 def test_avatar_tones_carry_white_letters():
