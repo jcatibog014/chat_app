@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar, csrf, empty %}
+{% from "_icons.html" import icon %}
+{% from "_story_card.html" import story_card %}
+{% block title %}Stories - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% call page_head('Stories') %}
+    <a class="button" href="{{ url_for('stories.new') }}">{{ icon('plus', 18) }} New story</a>
+  {% endcall %}
+
+  <section class="stories-section" data-stories-page>
+    <h2>Your Stories</h2>
+    {% if my_stories %}
+      <ul class="story-grid">
+        {% for story in my_stories %}
+          {% set views, reactions = stats.get(story.id, (0, 0)) %}
+          <li class="story-tile">
+            <a href="{{ url_for('stories.view', person_id=g.user.id, story=story.id) }}">{{ story_card(story) }}</a>
+            <div class="story-tile-info">
+              <span><strong data-seen-count="{{ story.id }}">{{ views }}</strong> seen{% if reactions %} · {{ reactions }} reacted{% endif %}</span>
+              <small>{{ story.created_at|ago }}{% if story.audience == 'close' %} · <span class="close-tag">Close Friends</span>{% endif %}</small>
+            </div>
+          </li>
+        {% endfor %}
+        <li class="story-tile story-tile-add">
+          <a href="{{ url_for('stories.new') }}">{{ icon('plus', 28) }}<span>Add a story</span></a>
+        </li>
+      </ul>
+    {% else %}
+      {% call empty('No Story Yet', 'Share a photo or a few words. It disappears after 24 hours.') %}
+        <a class="button" href="{{ url_for('stories.new') }}">{{ icon('plus', 18) }} New story</a>
+      {% endcall %}
+    {% endif %}
+  </section>
+
+  <section class="stories-section">
+    <h2>From People You Chat With</h2>
+    {% if rings %}
+      <ul class="story-people">
+        {% for ring in rings %}
+          {% set latest = ring.stories[-1] %}
+          <li>
+            <a class="story-person{{ ' has-new' if ring.has_unseen }}" href="{{ url_for('stories.view', person_id=ring.person.id) }}">
+              {{ story_card(latest) }}
+              <span class="story-person-who">
+                <span class="ring{{ ' is-new' if ring.has_unseen else ' is-seen' }}">{{ avatar(ring.person, 'small') }}</span>
+                <span><strong>{{ ring.person.name }}</strong>
+                  <small>{{ ring.stories|length }} stor{{ 'ies' if ring.stories|length != 1 else 'y' }} · {{ latest.created_at|ago }}{% if ring.has_unseen %} · <span class="new-tag">New</span>{% endif %}</small></span>
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      {{ empty('Nothing New', 'When people you chat with share a story, it shows here for 24 hours.') }}
+    {% endif %}
+    {% if muted_count %}
+      <p class="muted small top-gap">You muted {{ muted_count }} {{ 'person' if muted_count == 1 else 'people' }}'s stories. <a href="{{ url_for('settings.page', section='privacy') }}#muted-stories">Change this in Settings</a>.</p>
+    {% endif %}
+  </section>
+{% endblock %}

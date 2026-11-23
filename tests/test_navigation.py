@@ -26,11 +26,23 @@ def test_the_profile_menu_has_settings_and_log_out(maria):
         assert "Maria Santos" in menu and "@maria" in menu and "/settings" in menu and "Log out" in menu
 
 
-def test_phones_get_a_bottom_bar_with_chats_and_profile(maria):
+def bottom_bar(client, url):
+    return re.search(r'<nav class="bottom-nav" aria-label="Main">(.*?)</nav>', text(client.get(url)), re.S).group(1)
+
+
+def test_phones_get_a_bottom_bar_with_chats_stories_and_profile(maria):
     client, _ = maria
-    bar = re.search(r'<nav class="bottom-nav" aria-label="Main">(.*?)</nav>', text(client.get("/settings")), re.S).group(1)
-    assert "Chats" in bar and "Profile" in bar and "data-total-unread" in bar
-    assert 'aria-current="page"' in bar.split("Chats")[1]  # Settings marks Profile, not Chats
+    bar = bottom_bar(client, "/settings")
+    assert bar.index("Chats") < bar.index("Stories") < bar.index("Profile") and "data-total-unread" in bar
+    assert 'aria-current="page"' in bar.split("Stories")[1]  # Settings marks Profile, not Chats or Stories
+    stories_bar = bottom_bar(client, "/stories")
+    assert re.search(r'href="/stories" aria-current="page"', stories_bar)
+
+
+def test_the_menu_has_stories(maria):
+    client, _ = maria
+    page = text(client.get("/chats"))
+    assert re.search(r'<a href="/stories">.*?<span class="side-label">Stories</span>', page, re.S)
 
 
 def test_new_chat_and_search_open_beside_the_chat_list(maria):

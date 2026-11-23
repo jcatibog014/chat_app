@@ -1,0 +1,22 @@
+{% from "_macros.html" import avatar, csrf %}
+<section class="card" id="muted-stories">
+  <h2>Muted Stories</h2>
+  {% if story_muted_people %}
+    <p class="muted">You don't see these people's stories. They aren't told.</p>
+    <ul class="member-list">
+      {% for person in story_muted_people %}
+        <li class="member-row">
+          {{ avatar(person) }}
+          <div class="member-text"><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></div>
+          <form method="post" action="{{ url_for('stories.unmute', person_id=person.id) }}">
+            {{ csrf() }}
+            <input type="hidden" name="next" value="{{ url_for('settings.page', section='privacy') }}#muted-stories">
+            <button class="button button-quiet button-small" type="submit">Unmute</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">You see everyone's stories. To mute someone's, open one of their stories and choose More.</p>
+  {% endif %}
+</section>

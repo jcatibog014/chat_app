@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, csrf %}
+{% from "_icons.html" import icon %}
+{% from "_story_card.html" import story_card %}
+{% block logo_preload %}{# the viewer has no logo to show #}{% endblock %}
+{% block title %}{{ 'Your story' if mine else person.first_name ~ "'s story" }} - {{ APP_NAME }}{% endblock %}
+{% block body_class %}story-body{% endblock %}
+{% block layout %}
+{# A story fills the screen. The left and right thirds are links (Previous / Next), so it works
+   without JavaScript; stories.js adds the 5-second timer, which waits while you type or hold. #}
+<main id="main" class="story-viewer" data-story-viewer data-next="{{ next_url }}">
+  <div class="story-stage">
+    <div class="story-bars" aria-hidden="true">
+      {% for item in stories %}<span class="story-bar{{ ' is-done' if loop.index0 < index }}{{ ' is-now' if loop.index0 == index }}"><span></span></span>{% endfor %}
+    </div>
+    <header class="story-top">
+      {{ avatar(person, 'small') }}
+      <span class="story-who">
+        <strong>{{ 'Your story' if mine else person.name }}</strong>
+        <small>{{ story.created_at|ago }}{% if story.audience == 'close' %} · Close Friends{% endif %}</small>
+      </span>
+      {% if not mine %}
+        <details class="story-more" data-popover>
+          <summary class="story-icon" title="More">{{ icon('more', 20) }}<span class="visually-hidden">More</span></summary>
+          <div class="member-menu-items">
+            <form method="post" action="{{ url_for('stories.unmute' if story_muted else 'stories.mute', person_id=person.id) }}">
+              {{ csrf() }}
+              <button class="menu-item" type="submit">{{ icon('bell' if story_muted else 'bell-off', 16) }} {{ ('Unmute ' if story_muted else 'Mute ') ~ person.first_name ~ "'s stories" }}</button>
+            </form>
+          </div>
+        </details>
+      {% endif %}
+      <a class="story-icon" href="{{ url_for('stories.index') }}" title="Close">{{ icon('x', 22) }}<span class="visually-hidden">Close</span></a>
+    </header>
+
+    {{ story_card(story, 'full') }}
+
+    {% if prev_url %}<a class="story-tap story-prev" href="{{ prev_url }}"><span class="visually-hidden">Previous story</span></a>{% endif %}
+    <a class="story-tap story-next" href="{{ next_url }}" data-story-next><span class="visually-hidden">Next story</span></a>
+
+    <footer class="story-bottom">
+      {% if mine %}
+        <details class="story-seen" data-story-hold>
+          <summary>{{ icon('eye', 18) }} Seen by <strong data-seen-count="{{ story.id }}">{{ viewers|length }}</strong></summary>
+          <div class="story-seen-list">
+            {% if viewers %}
+              <ul>
+                {% for viewer, when, emoji in viewers %}
+                  <li>{{ avatar(viewer, 'small') }} <span><strong>{{ viewer.name }}</strong><small>{{ when|ago }}</small></span>{% if emoji %}<span class="story-seen-emoji" title="Reacted">{{ emoji }}</span>{% endif %}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p>Nobody has seen it yet.</p>
+            {% endif %}
+          </div>
+        </details>
+        <form method="post" action="{{ url_for('stories.delete', story_id=story.id) }}" data-confirm="Delete this story? It's gone for everyone.">
+          {{ csrf() }}
+          <button class="story-pill button-danger" type="submit">{{ icon('trash', 16) }} Delete</button>
+        </form>
+      {% else %}
+        <div class="story-reactions" role="group" aria-label="React">
+          {% for emoji in REACTION_EMOJI %}
+            <form method="post" action="{{ url_for('stories.react', story_id=story.id) }}">
+              {{ csrf() }}<input type="hidden" name="emoji" value="{{ emoji }}">
+              <button type="submit" class="story-react{{ ' is-mine' if emoji == my_reaction }}" aria-label="React with {{ REACTION_NAMES[emoji] }}">{{ emoji }}</button>
+            </form>
+          {% endfor %}
+        </div>
+        <form class="story-reply" method="post" action="{{ url_for('stories.reply', story_id=story.id) }}" data-story-hold>
+          {{ csrf() }}
+          <label class="visually-hidden" for="story-reply">Reply to {{ person.first_name }}</label>
+          <input id="story-reply" type="text" name="body" maxlength="4000" placeholder="Reply to {{ person.first_name }}..." required autocomplete="off">
+          <button class="story-icon" type="submit" title="Send">{{ icon('send', 20) }}<span class="visually-hidden">Send</span></button>
+        </form>
+      {% endif %}
+    </footer>
+  </div>
+</main>
+{% endblock %}

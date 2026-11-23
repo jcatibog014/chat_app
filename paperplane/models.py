@@ -190,6 +190,10 @@ class Message(Base):
     version: Mapped[int] = mapped_column(Integer, default=0)
     # The message this one answers (stage 6). Always in the same chat (tools.reply_target).
     reply_to_id: Mapped[int | None] = mapped_column(ForeignKey("messages.id", ondelete="SET NULL"), index=True)
+    # A private reply to someone's story (stories.reply): the story it answers, while it lasts.
+    story_id: Mapped[int | None] = mapped_column(ForeignKey("stories.id", ondelete="SET NULL"), index=True)
+    # Stays True after the story is gone (story_id becomes NULL), so the chat can say "Story expired".
+    is_story_reply: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
     sender: Mapped[User | None] = relationship()
     conversation: Mapped[Conversation] = relationship()
@@ -284,6 +288,72 @@ class PushSubscription(Base):
     p256dh: Mapped[str] = mapped_column(String(200))
     auth: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Story(Base):
+    """A photo or a text card that lasts 24 hours (stories.py)."""
+    __tablename__ = "stories"
+    __table_args__ = (Index("ix_stories_user_expires", "user_id", "expires_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(10))           # "photo" or "text"
+    text: Mapped[str] = mapped_column(String(250), default="")  # a photo's caption, or the card's words
+    background: Mapped[str] = mapped_column(String(10), default="pink")  # a text card's colour
+    audience: Mapped[str] = mapped_column(String(10), default="everyone")  # "everyone" or "close"
+    image: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    thumb: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+    user: Mapped[User] = relationship()
+
+
+class StoryView(Base):
+    """Who has seen a story (the first time). Only the story's owner sees this list."""
+    __tablename__ = "story_views"
+    __table_args__ = (UniqueConstraint("story_id", "viewer_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    story_id: Mapped[int] = mapped_column(ForeignKey("stories.id", ondelete="CASCADE"))
+    viewer_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    viewed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    viewer: Mapped[User] = relationship()
+
+
+class StoryReaction(Base):
+    """One emoji per viewer per story: another one replaces it, the same one takes it back."""
+    __tablename__ = "story_reactions"
+    __table_args__ = (UniqueConstraint("story_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    story_id: Mapped[int] = mapped_column(ForeignKey("stories.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    emoji: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class CloseFriend(Base):
+    """owner's Close Friends list: who sees their Close Friends stories."""
+    __tablename__ = "close_friends"
+    __table_args__ = (UniqueConstraint("owner_id", "friend_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    friend_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+
+
+class StoryMute(Base):
+    """user doesn't want to see muted's stories (they stay friends; nobody is told)."""
+    __tablename__ = "story_mutes"
+    __table_args__ = (UniqueConstraint("user_id", "muted_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    muted_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
 
 class Reaction(Base):

@@ -198,3 +198,41 @@ def test_a_friends_message_gets_answers_from_the_others(app, demo):
         senders = db.session().scalars(select(Message.sender_id).where(
             Message.conversation_id == rooms["Weekend Hike"]).order_by(Message.seq.desc()).limit(1)).all()
     assert senders[0] in (people["ben"], people["dana"])
+
+
+def test_a_teammate_looks_at_the_visitors_new_story_and_reacts(app, demo):
+    from paperplane.models import Story, StoryReaction, StoryView
+    team, people, tab = demo["crew"], demo["people"], demo["tab"]
+    team.step(0)
+    post(demo["client"], "/stories/new", {"kind": "text", "text": "Fresh one", "background": "teal",
+                                         "audience": "everyone"})
+    with app.app_context():
+        story_id = db.session().scalar(select(Story.id).where(Story.text == "Fresh one"))
+    team.step(1)
+    team.step(5.5)
+    with app.app_context():
+        s = db.session()
+        assert s.scalar(select(StoryView.viewer_id).where(StoryView.story_id == story_id)) == people["ana"]
+    assert [frame["data"]["story_id"] for frame in tab.ws.of_type("story.seen")] == [story_id]
+    team.step(8)
+    with app.app_context():
+        reaction = db.session().scalar(select(StoryReaction).where(StoryReaction.story_id == story_id))
+        assert reaction.user_id == people["ana"] and reaction.emoji in crew.STORY_REACTIONS
+    assert tab.ws.of_type("story.reacted")[-1]["data"]["name"] == "Ana"
+
+
+def test_the_crew_skips_a_close_friends_story_its_teammates_cant_see(app, demo):
+    from paperplane.models import CloseFriend, Story, StoryView
+    team = demo["crew"]
+    team.step(0)
+    with app.app_context():
+        s = db.session()
+        s.query(CloseFriend).filter(CloseFriend.owner_id == demo["tab"].user_id).delete()
+        s.commit()
+    post(demo["client"], "/stories/new", {"kind": "text", "text": "Nobody", "background": "teal", "audience": "close"})
+    team.step(1)
+    team.step(10)
+    with app.app_context():
+        s = db.session()
+        story_id = s.scalar(select(Story.id).where(Story.text == "Nobody"))
+        assert not s.scalar(select(StoryView.id).where(StoryView.story_id == story_id))

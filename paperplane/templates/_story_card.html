@@ -1,0 +1,15 @@
+{# A story's picture or text card. size: "full" (the viewer), "card" (the Stories page), "mini" (a chat quote).
+   The pictures come from /stories/<id>/image and /thumb, which check who may see them. #}
+{% macro story_card(story, size='card') %}
+  {% if story.kind == 'photo' %}
+    <div class="story-face story-photo story-{{ size }}">
+      <img src="{{ url_for('stories.image' if size == 'full' else 'stories.thumb', story_id=story.id) }}"
+           alt="{{ story.text or 'A photo' }}"{% if story.width %} width="{{ story.width }}" height="{{ story.height }}"{% endif %}>
+      {% if story.text and size != 'mini' %}<p class="story-caption">{{ story.text }}</p>{% endif %}
+    </div>
+  {% else %}
+    <div class="story-face story-text story-bg-{{ story.background }} story-{{ size }}">
+      <p>{{ story.text }}</p>
+    </div>
+  {% endif %}
+{% endmacro %}

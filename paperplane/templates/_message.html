@@ -23,6 +23,19 @@
         {% if m.conversation.is_group %}<span class="msg-sender">{{ m.sender.name }}</span>{% endif %}
         <div class="msg-line">
           <div class="bubble">
+            {% if m.story_info and not m.deleted_at %}
+              {% set si = m.story_info %}
+              <div class="story-quote" data-story-owner="{{ si.owner_id }}">
+                {% if si.live %}
+                  <a class="story-quote-face" href="{{ url_for('stories.view', person_id=si.owner_id, story=si.id) }}">
+                    {% if si.kind == 'photo' %}<img src="{{ url_for('stories.thumb', story_id=si.id) }}" alt="" width="40" height="64">
+                    {% else %}<span class="story-bg-{{ si.background }}"></span>{% endif %}
+                  </a>
+                {% endif %}
+                <span><small data-story-quote-words>Replied to {{ si.owner ~ "'s" if si.owner else 'a' }} story</small>
+                  {% if not si.live %}<em>Story expired</em>{% elif si.text %}<span>{{ si.text|truncate(60, True, '...') }}</span>{% endif %}</span>
+              </div>
+            {% endif %}
             {% if m.reply_info and not m.deleted_at %}
               <a class="reply-quote" href="#m-{{ m.reply_info.id }}" data-jump="{{ m.reply_info.id }}">
                 <strong>{{ m.reply_info.name }}</strong>

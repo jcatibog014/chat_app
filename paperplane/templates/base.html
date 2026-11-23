@@ -7,7 +7,7 @@
   <meta name="description" content="Paper Plane: a real-time chat app with direct messages, group chats, unread counts and online presence.">
   <link rel="preload" href="{{ url_for('static', filename='fonts/inter-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='fonts/outfit-latin-700-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="{{ url_for('static', filename='icons/logo.png') }}" as="image">
+  {% block logo_preload %}<link rel="preload" href="{{ url_for('static', filename='icons/logo.png') }}" as="image">{% endblock %}
   <link rel="icon" href="{{ url_for('static', filename='icons/favicon.ico') }}" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-32.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
@@ -24,6 +24,7 @@
   {# The live connection, on every page you see logged in: new messages, counts, presence. #}
   <script src="{{ url_for('static', filename='socket.js') }}" defer></script>
   <script src="{{ url_for('static', filename='chat.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='stories.js') }}" defer></script>
   {% endif %}
   {% block scripts %}{% endblock %}
 </head>

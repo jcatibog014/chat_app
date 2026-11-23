@@ -80,6 +80,13 @@ def test_an_expired_demo_logs_out_even_before_it_is_deleted(app):
     assert not is_logged_in(client)
 
 
+def people_with_stories(app, mika):
+    from paperplane.models import Story
+    with app.app_context():
+        return set(db.session().scalars(select(Story.user_id).join(User, User.id == Story.user_id).where(
+            User.demo_team_id == mika.demo_team_id)))
+
+
 def demo_pages(app, client):
     """Every page the demo can open, with what each must show (an example, never an empty page)."""
     mika = me(app, client)
@@ -90,19 +97,36 @@ def demo_pages(app, client):
              "/chats/new": ["People You Know", "Dana Lim"],
              "/settings": ["Your Account", "Time Zone"],
              "/settings/appearance": ["Pink", "Purple"], "/settings/notifications": ["On This Device"],
-             "/settings/privacy": ["Show When I'm Online", "Blocked People"], "/settings/devices": ["Leave the Demo"],
+             "/settings/privacy": ["Show When I'm Online", "Blocked People", "Close Friends", "Muted Stories",
+                                   "Dana Lim"],
+             "/settings/devices": ["Leave the Demo"],
+             "/stories": ["Your Stories", ">4</strong> seen", "1 reacted", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
+             "/stories/new": ["Who can see it", "Close Friends", "2 people"],
+             f"/stories/{mika.id}": ["Sketching the Kalye Coffee cups today.", 'data-seen-count', ">4</strong>", "Ben Cruz", "❤️"],
+             "/stories/tray": ["Ana", "Ben", "Carlo", 'class="ring is-new"', 'class="ring is-seen"'],
              "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"],
              "/search": ["Search Your Messages"],
              "/search?q=mockups": ["<mark>mockups</mark>", "Papel Studio"]}
+    for person in people_with_stories(app, mika):
+        pages[f"/stories/{person}"] = ["story-face"]
     for chat in chats:
         pages[f"/chats/{chat.id}"] = ["msg-text"]
         pages[f"/chats/{chat.id}/info"] = ["Group Info", "People", "Leave the Group"] if chat.is_group else ["Chat Info", "Block"]
-        samples = {"Papel Studio": 'class="photo"', "Weekend Hike": 'class="link-card"', "Launch Plans": 'class="file-card"'}
+        samples = {"Papel Studio": 'class="photo"', "Weekend Hike": 'class="link-card"', "Launch Plans": 'class="file-card"',
+                   None: 'class="story-quote"'}
+        if chat.title is None and chat.created_by_id != story_replier(app, mika):
+            samples = {}
         if chat.title in samples:  # a picture, a link preview and a file to look at
             pages[f"/chats/{chat.id}"].append(samples[chat.title])
         if chat.title == "Launch Plans":  # Mika's own group: every control, an admin and a working invite link
             pages[f"/chats/{chat.id}/info"] += ["Add People", "Invite Links", "2 of 10 used", "Admin", "Delete the Group"]
     return pages
+
+
+def story_replier(app, mika):
+    with app.app_context():
+        return db.session().scalar(select(User.id).where(User.demo_team_id == mika.demo_team_id,
+                                                         User.username.like("%.carlo")))
 
 
 def test_every_page_of_the_demo_shows_an_example(app):

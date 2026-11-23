@@ -26,6 +26,8 @@ def start():
     s = db.session()
     moment = utcnow()
     seed.purge(s, moment)
+    from .. import stories
+    stories.purge(s, moment)
     # Not while developing on your own PC (--debug): screenshots start many demos in a row.
     if not current_app.debug and not limits.hit(s, f"demo-ip:{limits.client_ip()}", DEMOS_PER_IP, 3600, moment):
         s.commit()
