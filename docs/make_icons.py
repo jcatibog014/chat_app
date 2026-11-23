@@ -1,15 +1,18 @@
-r"""Make the logo and the app icons (paperplane/static/icons/) from the owner's picture,
-docs/logo/paper-plane-logo.webp: two pink chat bubbles (the front one with "...") and a
-green "online" dot, on a WHITE background (1017 x 1024, no see-through parts).
+r"""Make the logo and the app icons (paperplane/static/icons/) from the owner's picture: a
+pink paper plane with a dotted trail behind it (PR #6, before that two chat bubbles).
+docs/logo/paper-plane-logo.webp is the picture as given (white background);
+docs/cut_out_logo.py cuts it out into docs/logo/paper-plane-logo.png (see-through
+background), which this script uses. Run that first after changing the picture.
 
-Because the picture has its own white background, it is shown on a white tile with round
-corners everywhere, like an app icon: on the blue sky of the menu, on the login, and in a
-browser tab. This script draws, through Playwright + Edge (a browser scales a picture smoothly):
-- logo.png (256 px): the white tile, for the pages (logo() in _icons.html);
-- icon-32/192/512.png and favicon.ico: the same tile, for tabs and the app manifest;
-- apple-touch-icon.png: square and white, because iPhones round the corners themselves;
-- icon-maskable-512.png: square and white, the bubbles smaller, because Android crops these
-  into its own shape (a circle, a squircle...) and the bubbles must stay in the middle 80%.
+The plane is shown with NO tile or background: on the coloured sky of the menu, on the
+login, and in a browser tab. This script draws, through Playwright + Edge (a browser scales
+a picture smoothly):
+- logo.png (256 px): the plane alone, for the pages (logo() in _icons.html);
+- icon-32/192/512.png and favicon.ico: the plane alone, for tabs and the app manifest;
+- apple-touch-icon.png: the plane alone too (the owner wants no background anywhere; an
+  iPhone fills the see-through part of a home-screen icon with its own colour, often black);
+- icon-maskable-512.png: the plane alone, smaller, because Android crops these
+  into its own shape (a circle, a squircle...) and the plane must stay in the middle 80%.
 
 Playwright isn't in requirements.txt: borrow another project's:
 
@@ -26,31 +29,31 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).parent.parent
-SOURCE = ROOT / "docs" / "logo" / "paper-plane-logo.webp"
+SOURCE = ROOT / "docs" / "logo" / "paper-plane-logo.png"
 ICONS = ROOT / "paperplane" / "static" / "icons"
 
-# (file, size, square?, how big the bubbles are drawn: 1 = the whole picture fills the tile)
+# (file, size, on a white square? (none now: no background anywhere), how big the plane is drawn)
 PNGS = [
-    ("logo.png", 256, False, 0.9),
-    ("icon-32.png", 32, False, 0.96),
-    ("icon-192.png", 192, False, 0.9),
-    ("icon-512.png", 512, False, 0.9),
-    ("apple-touch-icon.png", 180, True, 0.86),
-    ("icon-maskable-512.png", 512, True, 0.72),
+    ("logo.png", 256, False, 1),
+    ("icon-32.png", 32, False, 1),
+    ("icon-192.png", 192, False, 0.94),
+    ("icon-512.png", 512, False, 0.94),
+    ("apple-touch-icon.png", 180, False, 0.86),
+    ("icon-maskable-512.png", 512, False, 0.72),
 ]
 ICO_SIZES = (16, 32, 48)
 
 
 def html(size, square, scale):
     picture = base64.b64encode(SOURCE.read_bytes()).decode()
-    radius = "0" if square else f"{size * 0.22}px"
+    background = "#ffffff" if square else "transparent"
     inner = size * scale
     return (f'<style>html, body {{ margin: 0; background: transparent; }}'
             f'#icon {{ width: {size}px; height: {size}px; overflow: hidden; position: relative;'
-            f' background: #ffffff; border-radius: {radius}; }}'
+            f' background: {background}; }}'
             f'#icon img {{ position: absolute; width: {inner}px; height: {inner}px; object-fit: contain;'
             f' left: {(size - inner) / 2}px; top: {(size - inner) / 2}px; }}</style>'
-            f'<div id="icon"><img src="data:image/webp;base64,{picture}" alt=""></div>')
+            f'<div id="icon"><img src="data:image/png;base64,{picture}" alt=""></div>')
 
 
 def render(browser, size, square=False, scale=0.9):
@@ -80,7 +83,7 @@ def main():
         for name, size, square, scale in PNGS:
             (ICONS / name).write_bytes(render(browser, size, square, scale))
             print("saved", name)
-        write_ico(ICONS / "favicon.ico", [(size, render(browser, size, scale=0.96)) for size in ICO_SIZES])
+        write_ico(ICONS / "favicon.ico", [(size, render(browser, size, scale=1)) for size in ICO_SIZES])
         print("saved favicon.ico")
         browser.close()
 

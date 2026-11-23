@@ -1,8 +1,8 @@
 {# Line icons, drawn here so no icon font or outside file is needed. #}
 
-{# The app's mark: the owner's picture (docs/logo/paper-plane-logo.webp: two pink chat
-   bubbles with a green "online" dot) on a white tile with round corners, drawn by
-   docs/make_icons.py as static/icons/logo.png (256 px). `id` is no longer needed (it named
+{# The app's mark: the owner's picture (a pink paper plane with a dotted trail), cut out of
+   its white background (docs/cut_out_logo.py) and drawn by docs/make_icons.py as
+   static/icons/logo.png (256 px, see-through). `id` is no longer needed (it named
    the old SVG's gradient) but callers may still pass it. #}
 {% macro logo(size=36, id='logo') %}
   <img class="logo-mark" src="{{ url_for('static', filename='icons/logo.png') }}" width="{{ size }}" height="{{ size }}" alt="">
