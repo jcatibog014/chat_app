@@ -9,8 +9,9 @@ login, and in a browser tab. This script draws, through Playwright + Edge (a bro
 a picture smoothly):
 - logo.png (256 px): the plane alone, for the pages (logo() in _icons.html);
 - icon-32/192/512.png and favicon.ico: the plane alone, for tabs and the app manifest;
-- apple-touch-icon.png: square and white, because iPhones round the corners themselves;
-- icon-maskable-512.png: square and white, the plane smaller, because Android crops these
+- apple-touch-icon.png: the plane alone too (the owner wants no background anywhere; an
+  iPhone fills the see-through part of a home-screen icon with its own colour, often black);
+- icon-maskable-512.png: the plane alone, smaller, because Android crops these
   into its own shape (a circle, a squircle...) and the plane must stay in the middle 80%.
 
 Playwright isn't in requirements.txt: borrow another project's:
@@ -31,14 +32,14 @@ ROOT = Path(__file__).parent.parent
 SOURCE = ROOT / "docs" / "logo" / "paper-plane-logo.png"
 ICONS = ROOT / "paperplane" / "static" / "icons"
 
-# (file, size, on a white square?, how big the plane is drawn: 1 = it fills the icon)
+# (file, size, on a white square? (none now: no background anywhere), how big the plane is drawn)
 PNGS = [
     ("logo.png", 256, False, 1),
     ("icon-32.png", 32, False, 1),
     ("icon-192.png", 192, False, 0.94),
     ("icon-512.png", 512, False, 0.94),
-    ("apple-touch-icon.png", 180, True, 0.86),
-    ("icon-maskable-512.png", 512, True, 0.72),
+    ("apple-touch-icon.png", 180, False, 0.86),
+    ("icon-maskable-512.png", 512, False, 0.72),
 ]
 ICO_SIZES = (16, 32, 48)
 
