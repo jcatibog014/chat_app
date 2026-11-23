@@ -234,8 +234,9 @@ html:not(.js) .js-only { display: none !important; }
 .sidebar a { color: var(--sky-ink); text-decoration: none; }
 .sidebar-top { display: flex; align-items: center; gap: .6rem; }
 .logo { display: inline-flex; align-items: center; gap: .6rem; font: 700 1.25rem/1.1 var(--font-display); color: inherit; text-decoration: none; white-space: nowrap; }
-.logo-mark { flex: 0 0 auto; border-radius: 22%; }
-.sidebar .logo-mark { box-shadow: 0 3px 10px rgb(6 24 48 / .28); }
+/* The logo is the plane alone (see-through), so its shadow follows its shape (drop-shadow), never a box. */
+.logo-mark { flex: 0 0 auto; object-fit: contain; }
+.sidebar .logo-mark { filter: drop-shadow(0 0 1px rgb(255 255 255 / .9)) drop-shadow(0 0 1px rgb(255 255 255 / .9)) drop-shadow(0 2px 4px rgb(40 0 24 / .3)); }
 .side-links { list-style: none; margin: 1.4rem 0 0; padding: 0; display: grid; gap: .2rem; }
 .side-links a { display: flex; align-items: center; gap: .75rem; min-height: 2.6rem; padding: .35rem .8rem; border-radius: var(--radius); font-weight: 600; }
 .side-links a:hover { background: rgb(255 255 255 / .1); }
@@ -486,7 +487,7 @@ details.fold[open] { flex: 1 1 100%; }
 :root[data-theme="dark"] .welcome-clouds { opacity: .08; }
 .welcome-center { position: relative; display: grid; justify-items: center; gap: 1rem; padding: clamp(2rem, 6vh, 4rem) 1rem 3rem; }
 .welcome-brand { display: grid; justify-items: center; gap: .55rem; color: var(--ink); text-decoration: none; }
-.welcome-brand .logo-mark { box-shadow: 0 10px 28px rgb(19 38 59 / .16), 0 2px 6px rgb(19 38 59 / .08); }
+.welcome-brand .logo-mark { filter: drop-shadow(0 8px 14px rgb(120 20 70 / .18)); }
 .welcome-name { font: 700 clamp(2rem, 1.6rem + 1.6vw, 2.6rem)/1.1 var(--font-display); letter-spacing: -.01em; }
 .welcome-line { margin-top: -.5rem; color: var(--muted); font-size: 1.05rem; }
 .welcome-card { width: min(100%, 26rem); }
