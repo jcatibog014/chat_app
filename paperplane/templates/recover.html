@@ -1,0 +1,18 @@
+{% extends "_welcome.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Forgot Password - {{ APP_NAME }}{% endblock %}
+{% block card %}
+  <div class="card welcome-card">
+    <h1>Forgot Password</h1>
+    <p class="muted card-note">Use the recovery code you saved when you made your account.</p>
+    <form method="post" action="{{ url_for('auth.recover') }}" class="stack">
+      {{ csrf() }}
+      {{ field('username', 'Username', username, attrs='autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus') }}
+      {{ field('code', 'Recovery code', error=errors.code, attrs='autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" required') }}
+      {{ field('password', 'New password', type='password', error=errors.password, hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+      {{ field('confirm_password', 'New password again', type='password', attrs='autocomplete="new-password" required') }}
+      <button class="button button-block button-big" type="submit">Set new password</button>
+    </form>
+    <p class="welcome-switch"><a href="{{ url_for('auth.login') }}">Back to Log In</a></p>
+  </div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar %}
+{% block title %}Invite a Friend - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Invite a Friend', back=url_for('chats.index'), back_label='Chats') }}
+  <section class="card narrow-card">
+    <h2>Play It With Someone</h2>
+    <p class="muted card-note">Send one of these links to a friend, or open it yourself in a private window or on your phone. Whoever opens it plays that teammate, and the made-up version steps aside. Then chat with each other: every message, read and "is typing" arrives live. The links work until this demo ends.</p>
+    <ul class="friend-list">
+      {% for mate, link in mates %}
+        <li>
+          {{ avatar(mate, presence=presence_of(mate)) }}
+          <div class="friend-link">
+            <strong>{{ mate.name }}</strong>
+            <div class="copy-row">
+              <input type="text" id="link-{{ mate.id }}" value="{{ link }}" readonly aria-label="Link to play {{ mate.name }}">
+              <button class="button button-quiet button-small" type="button" data-copy="link-{{ mate.id }}" hidden>Copy</button>
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

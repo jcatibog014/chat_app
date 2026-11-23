@@ -1,0 +1,35 @@
+# Render "Blueprint": tells Render how to build and run Paper Plane.
+# Render reads this file when you choose New -> Blueprint and pick this repo.
+# The steps are in docs/DEPLOY.md.
+services:
+  - type: web
+    name: paper-plane
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    # ONE gunicorn process, on purpose: the hub (who is connected) lives in this process's
+    # memory, so every WebSocket must reach the same process (hub.py explains). Each open
+    # WebSocket holds a thread: 64 threads is about 60 people at once on the free plan.
+    # upgrade-db makes or updates the tables first (it changes nothing when they're up to date).
+    startCommand: >-
+      flask --app paperplane upgrade-db &&
+      gunicorn --worker-class gthread --workers 1 --threads 64 --timeout 120
+      --bind 0.0.0.0:$PORT "paperplane:create_app()"
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: SECRET_KEY
+        generateValue: true   # signs logins and links: never change it once the site is live
+      - key: DATABASE_URL
+        sync: false           # Neon's connection string: you paste it in Render (docs/DEPLOY.md)
+      - key: BASE_URL
+        sync: false           # the site's address, like https://paper-plane.onrender.com
+      - key: VAPID_PUBLIC_KEY
+        sync: false           # optional: phone notifications (flask --app paperplane make-vapid-keys)
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false           # optional: mailto:you@example.com, for the push services

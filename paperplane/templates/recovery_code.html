@@ -1,0 +1,13 @@
+{% extends "_welcome.html" %}
+{% block title %}Your Recovery Code - {{ APP_NAME }}{% endblock %}
+{% block card %}
+  <div class="card welcome-card">
+    <h1>{{ 'Welcome Aboard' if first_time else 'Your New Recovery Code' }}</h1>
+    <p class="card-note">Save this code somewhere safe. If you forget your password, it is the only way back in. We show it only once{% if not first_time %}, and your old code no longer works{% endif %}.</p>
+    <div class="copy-row code-row">
+      <input type="text" id="recovery-code" class="recovery-code" value="{{ code }}" readonly aria-label="Your recovery code">
+      <button class="button button-quiet" type="button" data-copy="recovery-code" hidden>Copy</button>
+    </div>
+    <a class="button button-block button-big top-gap" href="{{ url_for('settings.page') if from_settings else url_for('chats.index') }}">{{ 'Back to Settings' if from_settings else "I've saved it" }}</a>
+  </div>
+{% endblock %}

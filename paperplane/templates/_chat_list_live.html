@@ -1,0 +1,2 @@
+{# The whole chat list, for a browser catching up after a reconnect (live_events.sync). #}
+{% from "_chat_row.html" import chat_row %}{% for row in rows %}{{ chat_row(row, None, presence_of|default(None)) }}{% endfor %}

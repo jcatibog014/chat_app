@@ -1,0 +1,14 @@
+{% extends "_welcome.html" %}
+{% from "_macros.html" import csrf, avatar %}
+{% block title %}Join the Demo - {{ APP_NAME }}{% endblock %}
+{% block card %}
+  <div class="card welcome-card join-card">
+    {{ avatar(mate, 'big') }}
+    <h1>Join as {{ mate.first_name }}</h1>
+    <p class="card-note">Someone is trying the Paper Plane demo and invited you to play {{ mate.name }}. Your messages arrive live in their chats. If you are logged in here, this browser switches to the demo.</p>
+    <form method="post" action="{{ url_for('demo.join_now', token=token) }}">
+      {{ csrf() }}
+      <button class="button button-block button-big" type="submit">Join as {{ mate.first_name }}</button>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% from "_macros.html" import csrf %}
+<section class="card" id="notifications" data-notify-settings>
+  <h2>Notifications</h2>
+  <div class="setting-row first">
+    <div>
+      <h3>On This Device</h3>
+      <p class="muted small" data-notify-note>
+        Get a notification for new messages when Paper Plane isn't in front{% if push_key %}, and on this phone or computer even when no tab is open{% endif %}. Muted chats stay quiet.
+      </p>
+    </div>
+    <button class="button button-quiet js-only" type="button" data-notify-on data-key="{{ push_key }}" data-url="{{ url_for('search.add_device') }}">Turn on notifications</button>
+  </div>
+  <div class="setting-row">
+    <div>
+      <h3>Devices</h3>
+      <p class="muted small">{% if device_count %}{{ device_count }} phone{{ 's' if device_count != 1 }} or browser{{ 's' if device_count != 1 }} get{{ 's' if device_count == 1 }} notifications when no tab is open.{% else %}No device gets notifications when no tab is open.{% endif %}</p>
+    </div>
+    {% if device_count %}
+      <form method="post" action="{{ url_for('search.forget_devices') }}" data-confirm="Turn notifications off on every device?">
+        {{ csrf() }}
+        <button class="button button-quiet" type="submit">Turn off everywhere</button>
+      </form>
+    {% endif %}
+  </div>
+</section>

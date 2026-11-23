@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar, csrf %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ other.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Chat Info', back=url_for('chats.show', chat_id=conversation.id), back_label='Back to the chat') }}
+  <section class="card narrow-card person-card">
+    <div class="group-identity">
+      {{ avatar(other, 'big', presence=presence_of(other)) }}
+      <div>
+        <h2>{{ other.name }}</h2>
+        <p class="muted">@{{ other.handle }} · {{ presence_words(other) }}</p>
+      </div>
+    </div>
+    <div class="setting-row top-gap">
+      <div>
+        <h3>{{ 'Unblock' if i_blocked else 'Block' }} {{ other.first_name }}</h3>
+        <p class="muted small">
+          {% if i_blocked %}You blocked {{ other.first_name }}. Unblock to message each other again.
+          {% else %}Neither of you will be able to message the other, or see each other online. {{ other.first_name }} isn't told.{% endif %}
+        </p>
+      </div>
+      {% if i_blocked %}
+        <form method="post" action="{{ url_for('groups.unblock', user_id=other.id) }}">
+          {{ csrf() }}
+          <input type="hidden" name="next" value="{{ url_for('groups.info', chat_id=conversation.id) }}">
+          <button class="button button-quiet" type="submit">Unblock</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('groups.block', user_id=other.id) }}" data-confirm="Block {{ other.name }}?">
+          {{ csrf() }}
+          <input type="hidden" name="next" value="{{ url_for('groups.info', chat_id=conversation.id) }}">
+          <button class="button button-danger" type="submit">{{ icon('block', 18) }} Block</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% from "_macros.html" import avatar, csrf %}
+{% from "_icons.html" import icon %}
+{# One message. The same macro draws the page and the live messages (message_data in chats.py),
+   so they look the same. The live copy is drawn once for everyone (viewer_id=None): the browser
+   adds "mine" when it is your own and marks your reactions (chat.js), and CSS shows Edit and
+   Delete only where you may use them (the server checks again, of course).
+   A live copy has NO CSRF token in its forms: it would be the sender's token, sent to everyone.
+   chat.js puts the reader's own token in (from <meta name="csrf-token">).
+   follows: the same person's message just before (within 5 minutes): no avatar or name again. #}
+{% macro message(m, viewer_id=None, follows=False) %}
+  {% set page = viewer_id is not none %}
+  {% if m.kind == 'system' %}
+    <li class="msg msg-system" id="m-{{ m.id }}" data-id="{{ m.id }}" data-seq="{{ m.seq }}" data-at="{{ m.created_at|iso }}">
+      <span>{{ m.body }}</span>
+    </li>
+  {% else %}
+    {% set mine = page and m.sender_id == viewer_id %}
+    <li class="msg {{ 'mine' if mine else 'theirs' }}{% if follows %} follows{% endif %}{% if m.deleted_at %} is-deleted{% endif %}"
+        id="m-{{ m.id }}" data-id="{{ m.id }}" data-seq="{{ m.seq }}" data-sender="{{ m.sender_id }}" data-at="{{ m.created_at|iso }}"
+        data-version="{{ m.version }}">
+      <span class="msg-avatar">{{ avatar(m.sender, 'small') }}</span>
+      <div class="msg-body">
+        {% if m.conversation.is_group %}<span class="msg-sender">{{ m.sender.name }}</span>{% endif %}
+        <div class="msg-line">
+          <div class="bubble">
+            {% if m.reply_info and not m.deleted_at %}
+              <a class="reply-quote" href="#m-{{ m.reply_info.id }}" data-jump="{{ m.reply_info.id }}">
+                <strong>{{ m.reply_info.name }}</strong>
+                <span>{{ m.reply_info.snippet }}</span>
+              </a>
+            {% endif %}
+            {% for a in m.attachment_list|default([]) %}
+              {% if a.kind == 'image' %}
+                {% set scale = [1, 480 / ([a.width or 480, a.height or 480]|max)]|min %}
+                <a class="photo" href="{{ url_for('files.show', attachment_id=a.id) }}" target="_blank" rel="noopener">
+                  <img src="{{ url_for('files.thumb', attachment_id=a.id) }}" alt="Picture{% if m.sender %} from {{ m.sender.first_name }}{% endif %}"
+                       width="{{ ((a.width or 480) * scale)|int }}" height="{{ ((a.height or 480) * scale)|int }}" loading="lazy">
+                </a>
+              {% else %}
+                <a class="file-card" href="{{ url_for('files.show', attachment_id=a.id) }}" download>
+                  {{ icon('file', 22) }}
+                  <span class="file-text"><strong>{{ a.filename }}</strong><small>{{ a.size|human_size }}</small></span>
+                  {{ icon('download', 18) }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            {% if m.deleted_at %}
+              <p class="msg-text msg-gone">Message deleted</p>
+            {% elif m.body %}
+              <p class="msg-text" data-text>{{ m.body|linkify }}</p>
+            {% endif %}
+            {% if m.link_preview and not m.deleted_at %}
+              <a class="link-card" href="{{ m.link_preview.url }}" target="_blank" rel="noopener noreferrer nofollow ugc">
+                {% if m.link_preview.site_name %}<small>{{ m.link_preview.site_name }}</small>{% endif %}
+                <strong>{{ m.link_preview.title }}</strong>
+                {% if m.link_preview.description %}<span>{{ m.link_preview.description }}</span>{% endif %}
+              </a>
+            {% endif %}
+            <span class="msg-meta">{% if m.edited_at and not m.deleted_at %}<span class="msg-edited">edited</span> {% endif %}<time datetime="{{ m.created_at|iso }}" data-clock>{{ m.created_at|clock }}</time></span>
+          </div>
+          {% if not m.deleted_at %}
+          <details class="msg-menu" data-popover>
+            <summary class="icon-button icon-button-small" title="Message options">{{ icon('more', 18) }}<span class="visually-hidden">Message options</span></summary>
+            <div class="msg-menu-items">
+              <div class="react-row" role="group" aria-label="React">
+                {% for emoji in REACTION_EMOJI %}
+                  <form method="post" action="{{ url_for('messages.react', message_id=m.id) }}" data-tool="react">
+                    {% if page %}{{ csrf() }}{% endif %}
+                    <input type="hidden" name="emoji" value="{{ emoji }}">
+                    <button type="submit" class="react-choice" title="{{ REACTION_NAMES[emoji] }}" aria-label="React with {{ REACTION_NAMES[emoji] }}">{{ emoji }}</button>
+                  </form>
+                {% endfor %}
+              </div>
+              <a class="menu-item" href="{{ url_for('chats.show', chat_id=m.conversation_id, reply=m.id) }}#composer" data-tool="reply"
+                 data-reply-name="{{ m.sender.first_name }}" data-reply-snippet="{{ (m.body or 'Photo or file')|truncate(80, True, '...') }}">{{ icon('reply', 16) }} Reply</a>
+              <a class="menu-item only-mine{% if not m.body %} no-edit{% endif %}" href="{{ url_for('messages.edit', message_id=m.id) }}" data-tool="edit">{{ icon('pencil', 16) }} Edit</a>
+              <form class="msg-delete" method="post" action="{{ url_for('messages.delete', message_id=m.id) }}" data-tool="delete"
+                    data-confirm="Delete this message for everyone? It can't be brought back.">
+                {% if page %}{{ csrf() }}{% endif %}
+                <button type="submit" class="menu-item menu-danger">{{ icon('trash', 16) }} Delete for everyone</button>
+              </form>
+            </div>
+          </details>
+          {% endif %}
+        </div>
+        {% if m.reaction_list and not m.deleted_at %}
+          <div class="reactions">
+            {% for r in m.reaction_list %}
+              <form method="post" action="{{ url_for('messages.react', message_id=m.id) }}" data-tool="react">
+                {% if page %}{{ csrf() }}{% endif %}
+                <input type="hidden" name="emoji" value="{{ r.emoji }}">
+                <button type="submit" class="reaction{% if page and viewer_id in r.users %} is-mine{% endif %}" data-users="{{ r.users|join(',') }}"
+                        title="{{ r.label }}: {{ r.names }}" aria-label="{{ r.label }}, {{ r.count }}: {{ r.names }}">
+                  <span aria-hidden="true">{{ r.emoji }}</span> {{ r.count }}
+                </button>
+              </form>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </li>
+  {% endif %}
+{% endmacro %}
+
+{# The day line between messages ("Today", "Yesterday", "Monday", "Nov 3"). #}
+{% macro day_break(moment) %}
+  <li class="day-break" data-day="{{ moment|iso }}"><span>{{ moment|day_label }}</span></li>
+{% endmacro %}

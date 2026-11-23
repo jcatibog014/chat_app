@@ -1,0 +1,21 @@
+{% from "_macros.html" import avatar, csrf %}
+<section class="card" id="blocked">
+  <h2>Blocked People</h2>
+  {% if blocked_people %}
+    <p class="muted">You and they can't message each other or see each other online.</p>
+    <ul class="member-list">
+      {% for person in blocked_people %}
+        <li class="member-row">
+          {{ avatar(person) }}
+          <div class="member-text"><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></div>
+          <form method="post" action="{{ url_for('groups.unblock', user_id=person.id) }}">
+            {{ csrf() }}
+            <button class="button button-quiet button-small" type="submit">Unblock</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">You haven't blocked anyone. To block someone, open your chat with them and choose Chat Info.</p>
+  {% endif %}
+</section>

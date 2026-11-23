@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, csrf %}
+{% block title %}Edit Message - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Edit Message', back=url_for('chats.show', chat_id=conversation.id, _anchor='m-' ~ message.id), back_label='Back to the chat') }}
+  <section class="card narrow-card">
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" class="stack">
+      {{ csrf() }}
+      <label class="field">
+        <span class="field-label"><span>Message</span></span>
+        <textarea name="body" rows="5" maxlength="4000" required>{{ body }}</textarea>
+      </label>
+      <div class="form-actions start">
+        <a class="button button-quiet" href="{{ url_for('chats.show', chat_id=conversation.id) }}">Cancel</a>
+        <button class="button" type="submit">Save changes</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

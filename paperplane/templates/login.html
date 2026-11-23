@@ -1,0 +1,29 @@
+{% extends "_welcome.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Log In - {{ APP_NAME }}{% endblock %}
+{% block card %}
+  <div class="card welcome-card">
+    <h1>Log In</h1>
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" action="{{ url_for('auth.login') }}" class="stack">
+      {{ csrf() }}
+      <input type="hidden" name="next" value="{{ next }}">
+      {{ field('username', 'Username', username, attrs='autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus') }}
+      {{ field('password', 'Password', type='password', attrs='autocomplete="current-password" required',
+               aside='<a class="field-aside" href="' ~ url_for('auth.recover') ~ '">Forgot password?</a>') }}
+      <button class="button button-block button-big" type="submit">Log in</button>
+    </form>
+    <p class="welcome-switch">New here? <a href="{{ url_for('auth.signup') }}">Create an account.</a></p>
+  </div>
+  {% if has_page('demo.start') %}
+  <p class="or-line">or</p>
+  <div class="card welcome-card demo-card">
+    <h2>Explore the Demo</h2>
+    <p>Your own sample team that chats back, deleted after 24 hours.</p>
+    <form method="post" action="{{ url_for('demo.start') }}">
+      {{ csrf() }}
+      <button class="button button-quiet button-block" type="submit">Try the demo</button>
+    </form>
+  </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, csrf, empty %}
+{% from "_icons.html" import icon %}
+{% from "_chat_row.html" import chat_row %}
+{% from "_message.html" import message, day_break %}
+{% block title %}{% if conversation %}{{ title }}{% else %}Chats{% endif %} - {{ APP_NAME }}{% endblock %}
+{% block body_class %}chat-body{% if conversation %} has-open{% endif %}{% endblock %}
+{% block page_class %}chat-page{% endblock %}
+{% block content %}
+<div class="chat-layout">
+  {# ---------- The list of chats ---------- #}
+  <section class="chat-list-pane" aria-labelledby="chats-title">
+    <div class="list-head">
+      <h1 id="chats-title">Chats</h1>
+      <a class="icon-button" href="{{ url_for('chats.new') }}" title="New chat">{{ icon('new-chat', 20) }}<span class="visually-hidden">New chat</span></a>
+    </div>
+    {% if rows %}
+      <ul class="chat-list" data-chat-list>
+        {% for row in rows %}{{ chat_row(row, open_id, presence_of|default(None)) }}{% endfor %}
+      </ul>
+    {% else %}
+      <div class="list-empty" data-chat-list-empty>
+        <p>No chats yet.</p>
+        <a class="button button-small" href="{{ url_for('chats.new') }}">Start a chat</a>
+      </div>
+      <ul class="chat-list" data-chat-list></ul>
+    {% endif %}
+  </section>
+
+  {# ---------- The open chat ---------- #}
+  {% if conversation %}
+  <section class="conversation" aria-label="{{ title }}" data-conversation="{{ conversation.id }}"
+           data-kind="{{ conversation.kind }}" data-version="{{ conversation.version }}" data-role="{{ membership.role }}"
+           data-last-seq="{{ conversation.last_seq }}" data-read-seq="{{ membership.last_read_seq }}"
+           data-readers='{{ readers|tojson }}' data-people='{{ people|tojson }}'>
+    <header class="conversation-head">
+      <a class="icon-button back-to-list" href="{{ url_for('chats.index') }}" title="All chats">{{ icon('back', 20) }}<span class="visually-hidden">All chats</span></a>
+      {% if other %}{{ avatar(other, presence=presence_of(other) if presence_of is defined else None) }}{% else %}<span class="avatar group-avatar" aria-hidden="true">{{ icon('group', 20) }}</span>{% endif %}
+      <div class="conversation-title">
+        <h2>{{ title }}</h2>
+        <p class="conversation-sub" data-subtitle>
+          {% if other %}<span data-status-line data-user="{{ other.id }}" data-handle="{{ other.handle }}"{% if other.show_presence and other.last_seen_at %} data-last-seen="{{ other.last_seen_at|iso }}"{% endif %}>{{ presence_words(other) }}</span>
+          {% else %}{{ members|length }} members: {% for m in members %}{{ 'you' if m.user_id == g.user.id else m.user.first_name }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}
+        </p>
+      </div>
+      <details class="mute-menu" data-popover>
+        <summary class="icon-button" title="{{ 'Muted' if chat_is_muted(membership) else 'Mute notifications' }}">{{ icon('bell-off' if chat_is_muted(membership) else 'bell', 20) }}<span class="visually-hidden">Notifications for this chat</span></summary>
+        <div class="member-menu-items">
+          {% if chat_is_muted(membership) %}
+            <p class="menu-note">{{ muted_words(membership) }}</p>
+            <form method="post" action="{{ url_for('search.mute_chat', chat_id=conversation.id) }}">
+              {{ csrf() }}<input type="hidden" name="choice" value="off">
+              <button class="menu-item" type="submit">{{ icon('bell', 16) }} Turn notifications back on</button>
+            </form>
+          {% else %}
+            {% for choice, (words, _length) in MUTE_CHAT_CHOICES.items() %}
+              <form method="post" action="{{ url_for('search.mute_chat', chat_id=conversation.id) }}">
+                {{ csrf() }}<input type="hidden" name="choice" value="{{ choice }}">
+                <button class="menu-item" type="submit">{{ icon('bell-off', 16) }} {{ 'Mute for ' ~ words if choice != 'forever' else 'Mute until I turn it back on' }}</button>
+              </form>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </details>
+      {% if has_page('groups.info') %}
+        <a class="icon-button" href="{{ url_for('groups.info', chat_id=conversation.id) }}" title="{{ 'Group info' if conversation.is_group else 'Chat info' }}">{{ icon('info', 20) }}<span class="visually-hidden">{{ 'Group info' if conversation.is_group else 'Chat info' }}</span></a>
+      {% endif %}
+    </header>
+
+    <div class="messages-scroll" data-scroll>
+      <ol class="messages" data-messages aria-live="polite" aria-relevant="additions">
+        {% if more %}
+          <li class="load-earlier"><a class="button button-quiet button-small" href="{{ url_for('chats.show', chat_id=conversation.id, before=messages[0].seq) }}" data-load-earlier="{{ messages[0].seq }}">Load earlier messages</a></li>
+        {% endif %}
+        {% if before %}
+          <li class="load-earlier"><a href="{{ url_for('chats.show', chat_id=conversation.id) }}">Back to the latest messages</a></li>
+        {% endif %}
+        {% if not messages and not more %}
+          <li class="chat-start" data-chat-start>
+            <p>{% if conversation.is_dm %}This is the start of your messages with {{ title }}.{% else %}This is the start of {{ title }}.{% endif %} Say hello.</p>
+          </li>
+        {% endif %}
+        {% for m, follows, new_day in thread(messages, g.user.time_zone) %}
+          {% if new_day %}{{ day_break(m.created_at) }}{% endif %}
+          {{ message(m, g.user.id, follows) }}
+        {% endfor %}
+        <li class="seen-line" data-seen-line{% if not seen %} hidden{% endif %}>{{ seen }}</li>
+        <li id="latest" class="latest-anchor" aria-hidden="true"></li>
+      </ol>
+    </div>
+
+    <div class="composer-area">
+      <p class="typing" data-typing aria-live="polite"></p>
+      <ul class="mention-list" data-mention-list role="listbox" aria-label="People to mention" hidden></ul>
+      <p class="connection-note" data-connection hidden></p>
+      {% if can('send') %}
+      <div class="reply-banner" data-reply-banner{% if not replying %} hidden{% endif %}>
+        {{ icon('reply', 16) }}
+        <span>Replying to <strong data-reply-name>{{ replying.sender.first_name if replying else '' }}</strong>:
+          <span data-reply-snippet>{{ replying.body|truncate(80, True, '...') if replying else '' }}</span></span>
+        <a class="icon-button icon-button-small" href="{{ url_for('chats.show', chat_id=conversation.id) }}" data-reply-cancel title="Cancel reply">{{ icon('x', 16) }}<span class="visually-hidden">Cancel reply</span></a>
+      </div>
+      <div class="attach-chip" data-attach-chip hidden>
+        <img data-attach-thumb alt="" hidden>
+        <span data-attach-name></span>
+        <button class="icon-button icon-button-small" type="button" data-attach-clear title="Remove the file">{{ icon('x', 16) }}<span class="visually-hidden">Remove the file</span></button>
+      </div>
+      <form class="composer" id="composer" method="post" action="{{ url_for('chats.send', chat_id=conversation.id) }}" enctype="multipart/form-data" data-composer>
+        {{ csrf() }}
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="reply_to" value="{{ replying.id if replying else '' }}" data-reply-to>
+        <label class="visually-hidden" for="composer-text">Message</label>
+        <label class="attach-button" title="Send a picture or file">
+          {{ icon('paperclip', 20) }}<span class="visually-hidden">Send a picture or file</span>
+          <input type="file" name="file" data-attach-input
+                 accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.txt,.csv,.md,.docx,.xlsx,.pptx,.zip">
+        </label>
+        <textarea id="composer-text" name="body" rows="1" maxlength="4000" placeholder="Write a message" data-composer-text></textarea>
+        <button class="send-button" type="submit" title="Send">{{ icon('send', 20) }}<span class="visually-hidden">Send</span></button>
+      </form>
+      {% else %}
+      <p class="composer-closed">{{ cant_send_reason|default("You can't send messages here right now.") }}</p>
+      {% endif %}
+    </div>
+  </section>
+  {% else %}
+  <section class="conversation conversation-none">
+    {% call empty('Pick a Chat', 'Choose a chat on the left, or start a new one.') %}
+      <a class="button" href="{{ url_for('chats.new') }}">{{ icon('new-chat', 18) }} New chat</a>
+    {% endcall %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

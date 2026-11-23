@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar, empty %}
+{% from "_icons.html" import icon %}
+{% block title %}Search - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ page_head('Search') }}
+  <form class="search-row" method="get" action="{{ url_for('search.page') }}" role="search">
+    <label class="search-box">
+      <span class="visually-hidden">Search your messages</span>
+      {{ icon('search', 18) }}
+      <input type="search" name="q" value="{{ query }}" placeholder="Search your messages" maxlength="100" autofocus>
+    </label>
+    <label class="field search-chat">
+      <span class="visually-hidden">In which chat</span>
+      <select name="chat">
+        <option value="">All chats</option>
+        {% for row in rows %}<option value="{{ row.conversation.id }}"{% if row.conversation.id == chat_id %} selected{% endif %}>{{ row.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="button" type="submit">Search</button>
+  </form>
+
+  {% if not query %}
+    {{ empty('Search Your Messages', 'Find words in any of your chats. Only you see what you search for.') }}
+  {% elif too_short %}
+    {{ empty('Type a Little More', 'Search for at least 2 letters.') }}
+  {% elif not results %}
+    {{ empty('No Messages Found', 'Nothing in your chats has "' ~ query ~ '". Try other words.') }}
+  {% else %}
+    <p class="muted result-count">{{ results|length }}{% if results|length == 50 %}+{% endif %} message{{ 's' if results|length != 1 }} with "{{ query }}"</p>
+    <ul class="results">
+      {% for message, conversation in results %}
+        <li>
+          <a class="result" href="{{ url_for('chats.show', chat_id=conversation.id, before=message.seq + 20) }}#m-{{ message.id }}">
+            {{ avatar(message.sender, 'small') }}
+            <span class="result-text">
+              <span class="result-top">
+                <strong>{{ titles.get(conversation.id, conversation.title) }}</strong>
+                <time datetime="{{ message.created_at|iso }}">{{ message.created_at|short_when }}</time>
+              </span>
+              <span class="result-body"><span class="result-who">{{ 'You' if message.sender_id == g.user.id else message.sender.first_name }}:</span> {{ snippet(message.body, query) }}</span>
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}
