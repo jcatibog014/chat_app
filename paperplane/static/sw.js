@@ -5,7 +5,7 @@
 // a small "You're offline" page shows instead.
 "use strict";
 
-const CACHE = "paperplane-v1"; // change the number when these files change
+const CACHE = "paperplane-v2"; // change the number when these files change (v2: the new logo)
 const FILES = [
   "/static/style.css",
   "/static/app.js",
@@ -15,6 +15,7 @@ const FILES = [
   "/static/fonts/inter-latin-400-normal.woff2",
   "/static/fonts/outfit-latin-700-normal.woff2",
   "/static/icons/icon-192.png",
+  "/static/icons/logo.png",
   "/static/offline.html",
 ];
 

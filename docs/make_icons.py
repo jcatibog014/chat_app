@@ -1,20 +1,22 @@
-r"""Make the app icons (paperplane/static/icons/) from the logo, static/icons/favicon.svg:
-a white paper plane on a sky tile with round corners.
+r"""Make the logo and the app icons (paperplane/static/icons/) from the owner's picture,
+docs/logo/paper-plane-logo.webp: two pink chat bubbles (the front one with "...") and a
+green "online" dot, on a WHITE background (1017 x 1024, no see-through parts).
 
-This script draws, through Playwright + Edge (a browser draws an SVG smoothly):
-- icon-32/192/512.png and favicon.ico: the tile as it is, round corners and all;
-- apple-touch-icon.png: square, because iPhones round the corners themselves: the tile
-  a little bigger on the sky's own colour, so no corner shows;
-- icon-maskable-512.png: square too, the tile at 80% on the sky colour, because Android
-  crops these into its own shape (a circle, a squircle...) and the plane must stay in
-  the middle 80%.
+Because the picture has its own white background, it is shown on a white tile with round
+corners everywhere, like an app icon: on the blue sky of the menu, on the login, and in a
+browser tab. This script draws, through Playwright + Edge (a browser scales a picture smoothly):
+- logo.png (256 px): the white tile, for the pages (logo() in _icons.html);
+- icon-32/192/512.png and favicon.ico: the same tile, for tabs and the app manifest;
+- apple-touch-icon.png: square and white, because iPhones round the corners themselves;
+- icon-maskable-512.png: square and white, the bubbles smaller, because Android crops these
+  into its own shape (a circle, a squircle...) and the bubbles must stay in the middle 80%.
 
 Playwright isn't in requirements.txt: borrow another project's:
 
     cd C:\Users\USER\Documents\Workspace\chat_app
     ..\expense_tracker\.venv\Scripts\python docs\make_icons.py
 
-Run it again after changing the logo, and change the service worker's CACHE number so
+Run it again after changing the picture, and change the service worker's CACHE number so
 installed apps fetch the new icons.
 """
 import base64
@@ -24,33 +26,34 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).parent.parent
+SOURCE = ROOT / "docs" / "logo" / "paper-plane-logo.webp"
 ICONS = ROOT / "paperplane" / "static" / "icons"
-SOURCE = ICONS / "favicon.svg"
-SKY = "linear-gradient(180deg, #5aa9ea 0%, #1f5f9e 100%)"  # the tile's own colours, top to bottom
 
-# (file, size, square on sky?, how big the tile is drawn: 1 = the whole picture)
+# (file, size, square?, how big the bubbles are drawn: 1 = the whole picture fills the tile)
 PNGS = [
-    ("icon-32.png", 32, False, 1.0),
-    ("icon-192.png", 192, False, 1.0),
-    ("icon-512.png", 512, False, 1.0),
-    ("apple-touch-icon.png", 180, True, 1.2),
-    ("icon-maskable-512.png", 512, True, 0.8),
+    ("logo.png", 256, False, 0.9),
+    ("icon-32.png", 32, False, 0.96),
+    ("icon-192.png", 192, False, 0.9),
+    ("icon-512.png", 512, False, 0.9),
+    ("apple-touch-icon.png", 180, True, 0.86),
+    ("icon-maskable-512.png", 512, True, 0.72),
 ]
 ICO_SIZES = (16, 32, 48)
 
 
 def html(size, square, scale):
     picture = base64.b64encode(SOURCE.read_bytes()).decode()
-    background = SKY if square else "transparent"
+    radius = "0" if square else f"{size * 0.22}px"
     inner = size * scale
     return (f'<style>html, body {{ margin: 0; background: transparent; }}'
-            f'#icon {{ width: {size}px; height: {size}px; overflow: hidden; position: relative; background: {background}; }}'
-            f'#icon img {{ position: absolute; width: {inner}px; height: {inner}px; left: {(size - inner) / 2}px;'
-            f' top: {(size - inner) / 2}px; }}</style>'
-            f'<div id="icon"><img src="data:image/svg+xml;base64,{picture}" alt=""></div>')
+            f'#icon {{ width: {size}px; height: {size}px; overflow: hidden; position: relative;'
+            f' background: #ffffff; border-radius: {radius}; }}'
+            f'#icon img {{ position: absolute; width: {inner}px; height: {inner}px; object-fit: contain;'
+            f' left: {(size - inner) / 2}px; top: {(size - inner) / 2}px; }}</style>'
+            f'<div id="icon"><img src="data:image/webp;base64,{picture}" alt=""></div>')
 
 
-def render(browser, size, square=False, scale=1.0):
+def render(browser, size, square=False, scale=0.9):
     page = browser.new_page(viewport={"width": size, "height": size})
     page.set_content(html(size, square, scale))
     page.wait_for_function("document.querySelector('#icon img').complete")
@@ -71,12 +74,13 @@ def write_ico(path, pictures):
 
 
 def main():
+    ICONS.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(channel="msedge")
         for name, size, square, scale in PNGS:
             (ICONS / name).write_bytes(render(browser, size, square, scale))
             print("saved", name)
-        write_ico(ICONS / "favicon.ico", [(size, render(browser, size)) for size in ICO_SIZES])
+        write_ico(ICONS / "favicon.ico", [(size, render(browser, size, scale=0.96)) for size in ICO_SIZES])
         print("saved favicon.ico")
         browser.close()
 

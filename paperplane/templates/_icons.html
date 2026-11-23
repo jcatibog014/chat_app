@@ -1,22 +1,11 @@
 {# Line icons, drawn here so no icon font or outside file is needed. #}
 
-{# The app's mark: a white paper plane on a sky tile, with a soft dashed trail.
-   The same drawing is static/icons/favicon.svg. `id` keeps the gradient's name unique
-   when the logo shows twice on a page. #}
+{# The app's mark: the owner's picture (docs/logo/paper-plane-logo.webp: two pink chat
+   bubbles with a green "online" dot) on a white tile with round corners, drawn by
+   docs/make_icons.py as static/icons/logo.png (256 px). `id` is no longer needed (it named
+   the old SVG's gradient) but callers may still pass it. #}
 {% macro logo(size=36, id='logo') %}
-  <svg class="logo-mark" width="{{ size }}" height="{{ size }}" viewBox="0 0 64 64" aria-hidden="true">
-    <defs>
-      <linearGradient id="{{ id }}-sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#5aa9ea"></stop>
-        <stop offset="1" stop-color="#1f5f9e"></stop>
-      </linearGradient>
-    </defs>
-    <rect width="64" height="64" rx="15" fill="url(#{{ id }}-sky)"></rect>
-    <path d="M9 47 C 15 46, 18 42, 22 40" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 5"></path>
-    <path d="M12 31 L54 13 L31 51 L26 38 Z" fill="#ffffff"></path>
-    <path d="M26 38 L54 13 L31 51 Z" fill="#d3e6f8"></path>
-    <path d="M26 38 L29 46 L34 42 Z" fill="#9cc3e8"></path>
-  </svg>
+  <img class="logo-mark" src="{{ url_for('static', filename='icons/logo.png') }}" width="{{ size }}" height="{{ size }}" alt="">
 {% endmacro %}
 
 {% macro icon(name, size=18) %}
