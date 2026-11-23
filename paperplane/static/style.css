@@ -189,7 +189,6 @@ html:not(.js) .js-only { display: none !important; }
 .side-links a[aria-current="page"] { background: rgb(255 255 255 / .18); box-shadow: inset 4px 0 0 #ffffff; }
 .side-links .count { margin-left: auto; min-width: 1.5rem; text-align: center; font: 700 .75rem/1 var(--font-body); background: #ffffff; color: #164e86; border-radius: 99px; padding: .25rem .45rem; }
 .sidebar-foot { margin-top: auto; padding-top: 1rem; display: grid; gap: .6rem; }
-.menu-button { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; border-radius: var(--radius); border: 1px solid rgb(255 255 255 / .4); background: transparent; color: var(--sky-ink); cursor: pointer; }
 
 /* The Demo tag beside the name: tap it for a short note. */
 .demo-tag { position: relative; }
@@ -206,10 +205,24 @@ html:not(.js) .js-only { display: none !important; }
 .user-menu-name > span, .user-menu-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-menu-name small { color: var(--sky-muted); font-size: .8rem; }
 .user-menu .avatar { box-shadow: 0 0 0 2px rgb(255 255 255 / .55); }
-.user-menu-items { position: absolute; bottom: calc(100% + .4rem); left: 0; right: 0; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: .35rem; z-index: 20; }
-.user-menu-items a, .user-menu-items button { display: block; width: 100%; text-align: left; padding: .5rem .7rem; border-radius: var(--radius-small); border: 0; background: none; color: var(--ink) !important; font: inherit; cursor: pointer; text-decoration: none; }
-.user-menu-items a:hover, .user-menu-items button:hover { background: var(--surface-soft); }
-.user-menu-items form { margin: 0; }
+.user-menu summary > svg { margin-left: auto; flex: 0 0 auto; transition: transform .15s ease; transform: rotate(180deg); }
+.user-menu[open] summary > svg { transform: none; }
+
+/* The profile menu: who you are, Settings, Log out. It opens upwards from your picture. */
+.account-items { position: absolute; z-index: 40; bottom: calc(100% + .45rem); left: 0; width: 17rem; padding: .4rem; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: 0 14px 34px rgb(0 0 0 / .22); }
+.user-menu .account-items { right: 0; width: auto; }  /* as wide as the sky, never cut off by its edge */
+.account-items form { margin: 0; }
+.account-items .menu-item { color: var(--ink) !important; text-decoration: none; }
+.account-items .menu-item svg { color: var(--muted); }
+.account-who { display: flex; align-items: center; gap: .65rem; padding: .45rem .5rem .6rem; margin-bottom: .3rem; border-bottom: 1px solid var(--rule); }
+.account-who > div { display: grid; min-width: 0; line-height: 1.3; }
+.account-who strong, .account-who small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-who small { color: var(--muted); }
+.account-demo { margin: 0 0 .3rem; padding: .1rem .5rem .55rem; font-size: .82rem; color: var(--muted); border-bottom: 1px solid var(--rule); }
+.demo-chip { display: inline-block; margin-right: .25rem; font: 700 .62rem/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #3d2a00; background: #fcd34d; padding: .25rem .4rem; border-radius: 4px; vertical-align: .1em; }
+
+/* The phone's bar at the bottom: Chats and Profile (only on narrow screens). */
+.bottom-nav { display: none; }
 
 @media (min-width: 56rem) {
   /* The sky is exactly one screen tall and stays put, so its clouds never slide behind the
@@ -217,20 +230,28 @@ html:not(.js) .js-only { display: none !important; }
   .sidebar { flex: 0 0 15.5rem; position: sticky; top: 0; height: 100vh; align-self: flex-start; }
   .sidebar-inner { height: 100%; display: flex; flex-direction: column; padding: 1.1rem .85rem 1rem; overflow-y: auto; scrollbar-width: thin; }
   .sidebar-menu { display: flex; flex-direction: column; flex: 1 1 auto; }
-  .sidebar-top .menu-button { display: none !important; }
 }
 @media (max-width: 55.99rem) {
+  /* No sidebar and no header on a phone (the owner's choice): the menu is a bar at the bottom. */
   .app { flex-direction: column; }
-  .sidebar { padding: .5rem clamp(1rem, 3vw, 2.5rem); position: sticky; top: 0; z-index: 25; }
-  /* The slim top bar has no room for clouds. */
-  .sidebar.sky { background-size: 0 0, 0 0, 0 0, 100% 100%; }
-  .sidebar .logo { font-size: 1.1rem; }
-  .sidebar .logo-mark { width: 30px; height: 30px; }
-  .sidebar .menu-button { width: 2.4rem; height: 2.4rem; }
-  .js .sidebar-menu:not(.is-open) { display: none; }
-  .sidebar-menu { padding-bottom: .8rem; }
-  .side-links { margin-top: .8rem; }
-  .user-menu-items { bottom: auto; top: calc(100% + .4rem); }
+  .sidebar { display: none; }
+  :root { --bottom-nav: calc(3.7rem + env(safe-area-inset-bottom, 0px)); }
+  .main-column { padding-bottom: var(--bottom-nav); }
+  .bottom-nav { position: fixed; z-index: 35; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr;
+    height: var(--bottom-nav); padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface); border-top: 1px solid var(--rule); box-shadow: 0 -4px 16px rgb(19 38 59 / .06); }
+  .bottom-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; height: 100%;
+    color: var(--muted); font: 600 .75rem/1 var(--font-body); text-decoration: none; cursor: pointer; list-style: none; }
+  .bottom-link::-webkit-details-marker { display: none; }
+  .bottom-link[aria-current="page"], .bottom-profile[open] > .bottom-link { color: var(--link); }
+  .bottom-icon { position: relative; display: inline-grid; place-items: center; height: 1.75rem; }
+  .bottom-icon .count { position: absolute; top: -.35rem; left: 1rem; min-width: 1.2rem; padding: .15rem .35rem; border-radius: 99px;
+    background: var(--accent); color: var(--on-accent); font: 700 .68rem/1 var(--font-body); text-align: center; box-shadow: 0 0 0 2px var(--surface); }
+  .bottom-link[aria-current="page"] .avatar, .bottom-profile[open] .avatar { box-shadow: 0 0 0 2px var(--link); }
+  .bottom-profile .account-items { left: auto; right: .75rem; bottom: calc(100% + .5rem); width: min(18rem, calc(100vw - 1.5rem)); }
+  /* Inside a chat (or New Chat, Search) the bar steps aside: the back arrow goes to the list. */
+  .has-open .bottom-nav { display: none; }
+  .has-open .main-column { padding-bottom: 0; }
 }
 
 /* ---------- Page titles: bare, with a dashed trail under them ---------- */
@@ -402,6 +423,12 @@ details.fold[open] { flex: 1 1 100%; }
 .chat-list-pane { display: flex; flex-direction: column; min-height: 0; background: var(--surface); border-right: 1px solid var(--rule); }
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 1.2rem 1rem .7rem 1.25rem; }
 .list-head h1 { font-size: 1.6rem; }
+.list-tools { display: flex; gap: .2rem; }
+.icon-button.is-here { background: var(--accent-soft); color: var(--link); }
+.side-panel { background: var(--bg); }
+.panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 1.25rem clamp(1rem, 2.5vw, 2rem) 2rem; }
+.panel-body .new-chat { grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+.panel-body .results { max-width: none; }
 .chat-list { list-style: none; margin: 0; padding: 0 .5rem 1rem; overflow-y: auto; flex: 1 1 auto; }
 .list-empty { padding: 1rem 1.25rem; color: var(--muted); display: grid; gap: .7rem; justify-items: start; }
 .chat-row a { display: flex; align-items: center; gap: .75rem; padding: .65rem .75rem; border-radius: var(--radius); color: var(--ink); text-decoration: none; }
@@ -558,7 +585,7 @@ details.fold[open] { flex: 1 1 100%; }
 .people-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
 .person-button { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .5rem .6rem; border: 1px solid transparent; border-radius: var(--radius); background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .person-button:hover { background: var(--row-hover); border-color: var(--rule); }
-.person-button > span { flex: 1 1 auto; display: grid; }
+.person-text { flex: 1 1 auto; min-width: 0; display: grid; }
 .person-button small { color: var(--muted); }
 .pick-people { display: grid; gap: .5rem; }
 .pick-people legend { margin-bottom: .4rem; }
@@ -643,7 +670,9 @@ details.fold[open] { flex: 1 1 100%; }
 
 /* Narrow screens: the list OR the chat, never both squeezed. */
 @media (max-width: 55.99rem) {
-  .chat-layout { grid-template-columns: 1fr; height: calc(100dvh - 3.5rem); }
+  .chat-layout { grid-template-columns: 1fr; height: calc(100dvh - var(--bottom-nav)); }
+  .has-open .chat-layout { height: 100dvh; }
+  .close-panel { display: none; }
   .has-open .chat-list-pane { display: none; }
   .chat-body:not(.has-open) .conversation { display: none; }
   .back-to-list { display: inline-grid; margin-left: -.5rem; }

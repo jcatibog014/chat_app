@@ -116,6 +116,9 @@ def main():
         shot(page, "search")
         page.goto(BASE + "/settings")
         shot(page, "settings")
+        page.goto(BASE + "/chats")
+        page.locator(".user-menu summary").click()
+        shot(page, "profile-menu")
 
         # A friend plays Ben, in a second browser.
         page.goto(BASE + "/demo/friends")
@@ -150,6 +153,8 @@ def main():
         start_demo(page)
         time.sleep(1.5)
         shot(page, "phone-chats")
+        page.locator(".bottom-profile summary").click()
+        shot(page, "phone-profile")
         open_chat(page, "Papel Studio")
         shot(page, "phone-chat")
         context.close()

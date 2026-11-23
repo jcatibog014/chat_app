@@ -1,0 +1,25 @@
+{% from "_icons.html" import icon %}
+{% from "_chat_row.html" import chat_row %}
+{# The list of chats: the left side of the chat page. New Chat and Search open on the right of
+   the same page (the owner's choice: no separate pages for them), from the two buttons here.
+   pane: which right side is showing ("new", "search" or none), to mark its button. #}
+<section class="chat-list-pane" aria-labelledby="chats-title">
+  <div class="list-head">
+    <h1 id="chats-title">Chats</h1>
+    <div class="list-tools">
+      <a class="icon-button{% if pane == 'search' %} is-here{% endif %}" href="{{ url_for('search.page') }}" title="Search messages"{% if pane == 'search' %} aria-current="page"{% endif %}>{{ icon('search', 20) }}<span class="visually-hidden">Search messages</span></a>
+      <a class="icon-button{% if pane == 'new' %} is-here{% endif %}" href="{{ url_for('chats.new') }}" title="New chat"{% if pane == 'new' %} aria-current="page"{% endif %}>{{ icon('new-chat', 20) }}<span class="visually-hidden">New chat</span></a>
+    </div>
+  </div>
+  {% if rows %}
+    <ul class="chat-list" data-chat-list>
+      {% for row in rows %}{{ chat_row(row, open_id, presence_of|default(None)) }}{% endfor %}
+    </ul>
+  {% else %}
+    <div class="list-empty" data-chat-list-empty>
+      <p>No chats yet.</p>
+      <a class="button button-small" href="{{ url_for('chats.new') }}">Start a chat</a>
+    </div>
+    <ul class="chat-list" data-chat-list></ul>
+  {% endif %}
+</section>
