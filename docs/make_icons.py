@@ -1,6 +1,6 @@
 r"""Make the logo and the app icons (paperplane/static/icons/) from the owner's picture,
-docs/logo/paper-plane-logo.webp: two pink chat bubbles (the front one with "...") and a
-green "online" dot, on a WHITE background (1017 x 1024, no see-through parts).
+docs/logo/paper-plane-logo.webp: a pink paper plane with a dotted trail behind it, on a
+WHITE background (932 x 823, no see-through parts; PR #6, before that two chat bubbles).
 
 Because the picture has its own white background, it is shown on a white tile with round
 corners everywhere, like an app icon: on the blue sky of the menu, on the login, and in a
@@ -8,8 +8,8 @@ browser tab. This script draws, through Playwright + Edge (a browser scales a pi
 - logo.png (256 px): the white tile, for the pages (logo() in _icons.html);
 - icon-32/192/512.png and favicon.ico: the same tile, for tabs and the app manifest;
 - apple-touch-icon.png: square and white, because iPhones round the corners themselves;
-- icon-maskable-512.png: square and white, the bubbles smaller, because Android crops these
-  into its own shape (a circle, a squircle...) and the bubbles must stay in the middle 80%.
+- icon-maskable-512.png: square and white, the plane smaller, because Android crops these
+  into its own shape (a circle, a squircle...) and the plane must stay in the middle 80%.
 
 Playwright isn't in requirements.txt: borrow another project's:
 
@@ -29,12 +29,12 @@ ROOT = Path(__file__).parent.parent
 SOURCE = ROOT / "docs" / "logo" / "paper-plane-logo.webp"
 ICONS = ROOT / "paperplane" / "static" / "icons"
 
-# (file, size, square?, how big the bubbles are drawn: 1 = the whole picture fills the tile)
+# (file, size, square?, how big the plane is drawn: 1 = the whole picture fills the tile)
 PNGS = [
-    ("logo.png", 256, False, 0.9),
+    ("logo.png", 256, False, 0.84),
     ("icon-32.png", 32, False, 0.96),
-    ("icon-192.png", 192, False, 0.9),
-    ("icon-512.png", 512, False, 0.9),
+    ("icon-192.png", 192, False, 0.84),
+    ("icon-512.png", 512, False, 0.84),
     ("apple-touch-icon.png", 180, True, 0.86),
     ("icon-maskable-512.png", 512, True, 0.72),
 ]
