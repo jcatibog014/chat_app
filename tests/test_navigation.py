@@ -61,4 +61,7 @@ def test_the_demo_profile_menu_offers_a_friend_link(app):
     client = browser(app)
     post(client, "/demo")
     page = text(client.get("/chats"))
-    assert "Invite a friend" in page and "Leave the demo" in page and 'class="demo-chip"' in page
+    assert "Invite a friend" in page and "Leave the demo" in page
+    # The menu stays small: the Demo tag by the logo says it's a demo, not a block in the menu.
+    menu = page.split('<div class="account-items" role="menu">', 1)[1].split("</form>", 1)[0]
+    assert "account-demo" not in menu and "A sample team" not in menu

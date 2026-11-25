@@ -134,11 +134,11 @@ def test_restricted_people_dont_see_each_other_online(app, team):
 
 def test_unrestrict_from_settings(app, team):
     post(team["client"]["olga"], f"/people/{team['ids']['max']}/restrict")
-    privacy = words(team["client"]["olga"].get("/settings/privacy"))
+    privacy = words(team["client"]["olga"].get("/settings/preferences"))
     assert "Restricted People" in privacy and "Max Person" in privacy
     assert privacy.index("Restricted People") < privacy.index("Blocked People")
     post(team["client"]["olga"], f"/people/{team['ids']['max']}/unrestrict", {"next": "/settings/privacy"})
-    assert "You haven't restricted anyone" in words(team["client"]["olga"].get("/settings/privacy"))
+    assert "You haven't restricted anyone" in words(team["client"]["olga"].get("/settings/preferences"))
     assert menu_labels(row_html(team, "olga", "dm"))[1] == "Restrict"
 
 

@@ -60,10 +60,33 @@ def test_a_mention_shows_and_opening_the_page_reads_it(app, team):
     first = text(page(team, "max"))
     assert "<h2>New</h2>" in first and "mentioned you" in first and "Olga Person" in first and "Club" in first
     assert '"@max can you bring the tent?"' in first and 'class="activity is-new"' in first
-    assert re.search(rf'class="activity-row" href="/chats/{team["group"]}\?before=\d+#m-\d+"', first)
+    # Opening the page doesn't read it: clicking the line does, and goes to the message.
+    assert badge(team, "max") == 1
+    link = re.search(r'class="activity-row" href="(/notifications/\d+)"', first).group(1)
+    opened = team["client"]["max"].get(link)
+    assert re.search(rf'^/chats/{team["group"]}\?before=\d+#m-\d+$', opened.headers["Location"])
     assert badge(team, "max") == 0
     second = text(page(team, "max"))
     assert "<h2>New</h2>" not in second and "<h2>Earlier</h2>" in second
+
+
+def test_mark_all_as_read_and_lines_with_nowhere_to_go(app, team):
+    with app.app_context():
+        say(team, "olga", "group", "@sam one")
+        say(team, "olga", "group", "@sam two")
+    assert badge(team, "sam") == 2 and "Mark all as read" in words(page(team, "sam"))
+    post(team["client"]["sam"], "/notifications/read")
+    assert badge(team, "sam") == 0 and "Mark all as read" not in words(page(team, "sam"))
+    # Removed from the group: the new line has no link, so it's a button that just reads it.
+    post(team["client"]["olga"], f"/chats/{team['group']}/members/{team['ids']['sam']}/remove")
+    html = text(page(team, "sam"))
+    action = re.search(r'<form method="post" action="(/notifications/\d+/read)">', html).group(1)
+    assert post(team["client"]["sam"], action).headers["Location"] == "/notifications"
+    assert badge(team, "sam") == 0
+    # Nobody opens someone else's line.
+    with app.app_context():
+        sams = lines_of(app, team["ids"]["sam"])[0].id
+    assert team["client"]["max"].get(f"/notifications/{sams}").status_code == 404
 
 
 def test_replies_and_reactions_to_your_message(app, team):
@@ -139,6 +162,7 @@ def test_a_new_story_tells_the_people_who_may_see_it(app, team):
     card(team["client"]["olga"], "And another")
     assert len(lines_of(app, team["ids"]["sam"], "story_new")) == 1
     assert "Olga Person posted a story" in words(page(team, "sam"))
+    post(team["client"]["sam"], "/notifications/read")
     # ...but once read, the next story is a new line.
     card(team["client"]["olga"], "A third")
     assert len(lines_of(app, team["ids"]["sam"], "story_new")) == 2
@@ -198,7 +222,9 @@ def test_the_number_changes_live(app, team):
     with app.app_context():
         say(team, "olga", "group", "@max ping")
     assert tab.ws.of_type("activity.count")[-1]["data"] == {"unread": 1}
-    page(team, "max")
+    page(team, "max")  # looking doesn't read
+    assert tab.ws.of_type("activity.count")[-1]["data"] == {"unread": 1}
+    post(team["client"]["max"], "/notifications/read")
     assert tab.ws.of_type("activity.count")[-1]["data"] == {"unread": 0}
 
 

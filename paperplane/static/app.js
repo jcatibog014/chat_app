@@ -231,7 +231,25 @@ function setUpWatchChanges() {
   });
 }
 
+// Group info: find someone in the People list as you type.
+function setUpPeopleSearch() {
+  const box = document.querySelector("[data-people-search]");
+  const list = document.querySelector("[data-people]");
+  if (!box || !list) return;
+  const none = document.querySelector("[data-people-none]");
+  box.addEventListener("input", () => {
+    const wanted = box.value.trim().toLowerCase();
+    let shown = 0;
+    list.querySelectorAll(":scope > .member-row").forEach((row) => {
+      const text = row.querySelector(".member-text").textContent.toLowerCase();
+      row.hidden = wanted !== "" && !text.includes(wanted);
+      if (!row.hidden) shown += 1;
+    });
+    if (none) none.hidden = shown > 0;
+  });
+}
+
 // Startup: every part looks for its own elements and does nothing if they aren't on the page.
-const setUps = [setUpToasts, setUpWatchChanges, setUpInstall, setUpTheme, setUpAccent, setUpPopovers,
+const setUps = [setUpToasts, setUpWatchChanges, setUpPeopleSearch, setUpInstall, setUpTheme, setUpAccent, setUpPopovers,
   setUpConfirm, setUpAutoSubmit, setUpCopy];
 document.addEventListener("DOMContentLoaded", () => setUps.forEach((setUp) => setUp()));

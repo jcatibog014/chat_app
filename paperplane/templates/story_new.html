@@ -15,16 +15,21 @@
     </fieldset>
 
     <div class="story-part" data-story-part="photo">
-      <label class="field">
-        <span class="field-label"><span>Photo <span class="hint">JPEG, PNG, GIF or WebP, up to 5 MB</span></span></span>
+      <span class="field-label"><span>Photo</span></span>
+      <label class="dropzone" data-dropzone>
         <input type="file" name="photo" accept="image/jpeg,image/png,image/gif,image/webp" data-story-photo>
+        <img class="dropzone-preview" alt="Your photo" hidden data-story-preview>
+        <span class="dropzone-words">
+          {{ icon('upload', 26) }}
+          <strong><span class="dropzone-click">Click to upload</span> or drag and drop</strong>
+          <small>JPEG, PNG, GIF or WebP, up to 5 MB</small>
+        </span>
       </label>
-      <img class="story-preview" alt="" hidden data-story-preview>
     </div>
 
     <label class="field">
-      <span class="field-label"><span data-story-text-label>Words <span class="hint">(for a photo, a caption you may leave out)</span></span></span>
-      <textarea name="text" rows="3" maxlength="250" placeholder="What's new?" data-story-text>{{ form.get('text', '') }}</textarea>
+      <span class="field-label"><span data-story-text-label>{% if kind == 'text' %}Text{% else %}Caption <span class="hint">(optional)</span>{% endif %}</span></span>
+      <textarea name="text" rows="3" maxlength="250" placeholder="{{ "What's new?" if kind == 'text' else 'Add a caption...' }}" data-story-text>{{ form.get('text', '') }}</textarea>
     </label>
 
     <div class="story-part" data-story-part="text">
@@ -50,7 +55,7 @@
         <span><strong>Everyone you chat with</strong><span class="hint"> People you share a chat with.</span></span></label>
       <label class="check"><input type="radio" name="audience" value="close"{% if audience == 'close' %} checked{% endif %}>
         <span><strong>Close Friends</strong><span class="hint"> {{ close_count }} {{ 'person' if close_count == 1 else 'people' }} ·
-          <a href="{{ url_for('settings.page', section='privacy') }}#close-friends">edit the list</a></span></span></label>
+          <a href="{{ url_for('settings.page', section='preferences') }}#close-friends">edit the list</a></span></span></label>
     </fieldset>
 
     <div class="form-actions"><button class="button" type="submit">{{ icon('send', 18) }} Share story</button></div>

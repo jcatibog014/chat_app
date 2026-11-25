@@ -262,7 +262,7 @@ def sample_stories(s, team, people, moment):
     s.add(CloseFriend(owner_id=carlo.id, friend_id=mika.id))
     story(carlo, 2, text="Close friends only: the new Kalye Coffee cups arrive tomorrow!", background="orange",
           audience="close")
-    # Dana: Mika muted her stories (Settings > Privacy > Muted Stories shows her).
+    # Dana: Mika muted her stories (Settings > Preferences > Muted Stories shows her).
     story(dana, 4, text="Snacks for the hike: done.", background="blue")
     s.add(StoryMute(user_id=mika.id, muted_id=dana.id))
 

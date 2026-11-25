@@ -6,7 +6,7 @@ still read it, but:
   keeps a grey badge and says Restricted);
 - neither of you sees the other online (presence.audience_filters, and pages' dots);
 - they aren't told.
-Undo it from the chat's menu, or Settings > Privacy > Restricted People.
+Undo it from the chat's menu, or Settings > Preferences > Restricted People.
 """
 from sqlalchemy import delete, or_, select
 

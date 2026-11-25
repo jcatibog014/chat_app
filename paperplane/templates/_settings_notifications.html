@@ -8,7 +8,7 @@
         Get a notification for new messages when Paper Plane isn't in front{% if push_key %}, and on this phone or computer even when no tab is open{% endif %}. Muted chats stay quiet.
       </p>
     </div>
-    <button class="button button-quiet js-only" type="button" data-notify-on data-key="{{ push_key }}" data-url="{{ url_for('search.add_device') }}">Turn on notifications</button>
+    <button class="button js-only" type="button" data-notify-on data-key="{{ push_key }}" data-url="{{ url_for('search.add_device') }}">Turn on notifications</button>
   </div>
   <div class="setting-row">
     <div>

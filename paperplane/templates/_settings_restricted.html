@@ -10,7 +10,7 @@
           <div class="member-text"><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></div>
           <form method="post" action="{{ url_for('groups.unrestrict_person', user_id=person.id) }}">
             {{ csrf() }}
-            <input type="hidden" name="next" value="{{ url_for('settings.page', section='privacy') }}#restricted">
+            <input type="hidden" name="next" value="{{ url_for('settings.page', section='preferences') }}#restricted">
             <button class="button button-quiet button-small" type="submit">Unrestrict</button>
           </form>
         </li>
