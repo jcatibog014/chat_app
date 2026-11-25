@@ -107,6 +107,8 @@ def delete_message(s, me, message_id, moment):
     s.execute(delete(Reaction).where(Reaction.message_id == message.id))
     from . import files
     files.forget(s, message)  # its pictures and files go too
+    from . import activity
+    activity.forget_message(s, message.id)  # and its lines on Notifications pages
     from .models import LinkPreview
     s.execute(delete(LinkPreview).where(LinkPreview.message_id == message.id))
     changed(s, conversation, message, moment)
@@ -125,12 +127,16 @@ def react(s, me, message_id, emoji, moment):
     chats.require_speaking("react", s, conversation, membership, me, moment)
     existing = s.scalar(select(Reaction).where(Reaction.message_id == message.id, Reaction.user_id == me.id,
                                                Reaction.emoji == emoji))
+    from . import activity
     if existing is not None:
         s.delete(existing)
         added = False
+        activity.take_back(s, message.sender_id, "reaction", me.id, message_id=message.id, emoji=emoji)
     else:
         s.add(Reaction(message_id=message.id, user_id=me.id, emoji=emoji, created_at=moment))
         added = True
+        activity.add(s, message.sender_id, "reaction", me, moment, conversation_id=conversation.id,
+                     message_id=message.id, emoji=emoji)
     s.flush()
     changed(s, conversation, message, moment)
     return added

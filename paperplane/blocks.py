@@ -39,6 +39,8 @@ def block(s, me, other, moment):
     if not i_blocked(s, me.id, other.id):
         s.add(Block(blocker_id=me.id, blocked_id=other.id, created_at=moment))
         s.flush()
+    from . import activity
+    activity.forget_between(s, me.id, other.id)  # no Notifications lines between us
     # Our DM (if any) closes for both of us at once: tell both people's open tabs to redraw it.
     dm = s.scalar(select(Conversation).where(Conversation.dm_key == chats.dm_key(me.id, other.id)))
     if dm is not None:

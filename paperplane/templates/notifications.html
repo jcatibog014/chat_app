@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_head, avatar, empty %}
+{% from "_icons.html" import icon %}
+{# The Notifications page (activity.py): New (unread when the page opened) and Earlier. Each
+   line says who did what, quotes the words it's about, and links to where it happened when you
+   may still go there (a chat you left, or a story that ended, has no link). #}
+{% block title %}Notifications - {{ APP_NAME }}{% endblock %}
+
+{% macro line_words(line) -%}
+  {% set k = line.item.kind %}
+  {% set place = line.chat_title %}
+  <strong>{{ line.actor.name }}</strong>
+  {% if k == 'mention' %} mentioned you{% if place %} in <strong>{{ place }}</strong>{% endif %}
+  {% elif k == 'reply' %} replied to your message{% if place %} in <strong>{{ place }}</strong>{% endif %}
+  {% elif k == 'reaction' %} reacted {{ line.item.emoji }} to your message{% if place %} in <strong>{{ place }}</strong>{% endif %}
+  {% elif k == 'story_new' %} posted a story{% if not line.story_live %} (it has ended){% endif %}
+  {% elif k == 'story_reaction' %} reacted {{ line.item.emoji }} to your story{% if not line.story_live %} (it has ended){% endif %}
+  {% elif k == 'story_reply' %} replied to your story
+  {% elif k == 'group_added' %} added you to <strong>{{ place }}</strong>
+  {% elif k == 'group_admin' %} made you an admin of <strong>{{ place }}</strong>
+  {% elif k == 'group_owner' %} made you the owner of <strong>{{ place }}</strong>
+  {% elif k == 'group_removed' %} removed you from <strong>{{ place }}</strong>
+  {% endif %}
+{%- endmacro %}
+
+{% macro kind_badge(line) -%}
+  {% set k = line.item.kind %}
+  <span class="activity-kind activity-{{ k.split('_')[0] }}{% if line.item.emoji %} has-emoji{% endif %}" aria-hidden="true">
+    {%- if line.item.emoji %}{{ line.item.emoji }}
+    {%- elif k == 'mention' %}{{ icon('at', 13) }}
+    {%- elif k in ('reply', 'story_reply') %}{{ icon('reply', 13) }}
+    {%- elif k.startswith('story') %}{{ icon('stories', 13) }}
+    {%- else %}{{ icon('group', 13) }}{% endif -%}
+  </span>
+{%- endmacro %}
+
+{% macro activity_list(lines) %}
+  <ul class="activity-list card">
+    {% for line in lines %}
+      <li class="activity{% if line.is_new %} is-new{% endif %}">
+        {% set inner %}
+          <span class="activity-who">{{ avatar(line.actor) }}{{ kind_badge(line) }}</span>
+          <span class="activity-text">
+            <span class="activity-words">{{ line_words(line) }}</span>
+            {% if line.snippet %}<span class="activity-snippet">"{{ line.snippet|truncate(110, True, '...') }}"</span>{% endif %}
+            <time datetime="{{ line.item.created_at|iso }}">{{ line.item.created_at|ago }}</time>
+          </span>
+          {% if line.is_new %}<span class="activity-dot" title="New"><span class="visually-hidden">New</span></span>{% endif %}
+        {% endset %}
+        {% if line.url %}<a class="activity-row" href="{{ line.url }}">{{ inner }}</a>
+        {% else %}<div class="activity-row">{{ inner }}</div>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{% block content %}
+  {% call page_head('Notifications') %}
+    <a class="button button-quiet" href="{{ url_for('settings.page', section='notifications') }}">{{ icon('settings', 18) }} Notification settings</a>
+  {% endcall %}
+  <p class="activity-refresh" data-activity-refresh hidden><a class="button button-small" href="{{ url_for('activity.page') }}">Show new notifications</a></p>
+  {% if not new and not earlier %}
+    {{ empty('No Notifications Yet', 'When someone mentions you, replies to you, reacts, posts a story, or adds you to a group, it shows here.') }}
+  {% else %}
+    {% if new %}
+      <section class="activity-section">
+        <h2>New</h2>
+        {{ activity_list(new) }}
+      </section>
+    {% endif %}
+    {% if earlier %}
+      <section class="activity-section">
+        <h2>Earlier</h2>
+        {{ activity_list(earlier) }}
+      </section>
+    {% endif %}
+    {% if older %}
+      <p class="media-more"><a class="button button-quiet" href="{{ url_for('activity.page', before=older) }}">Show older</a></p>
+    {% endif %}
+  {% endif %}
+{% endblock %}

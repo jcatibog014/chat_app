@@ -172,6 +172,9 @@ def main():
         page.goto(BASE + "/chats")
         page.locator(".user-menu summary").click()
         shot(page, "profile-menu")
+        page.keyboard.press("Escape")
+        page.goto(BASE + "/notifications")
+        shot(page, "notifications")
 
         # A friend plays Ben, in a second browser.
         page.goto(BASE + "/demo/friends")
@@ -210,6 +213,10 @@ def main():
         shot(page, "phone-profile")
         page.goto(BASE + "/stories")
         shot(page, "phone-stories")
+        page.goto(BASE + "/chats")
+        time.sleep(.5)
+        page.goto(BASE + "/notifications")
+        shot(page, "phone-notifications")
         page.goto(BASE + "/chats")
         page.locator(".story-circle", has_text="Carlo").click()
         page.wait_for_selector("[data-story-viewer]")

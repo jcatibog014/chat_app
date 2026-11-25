@@ -105,6 +105,8 @@ def demo_pages(app, client):
              "/settings/privacy": ["Show When I'm Online", "Blocked People", "Close Friends", "Muted Stories",
                                    "Dana Lim"],
              "/settings/devices": ["Leave the Demo"],
+             "/notifications": ["<h2>New</h2>", "mentioned you", "posted a story", "reacted", "replied to your story",
+                                "<h2>Earlier</h2>", "added you to", "replied to your message"],
              "/stories": ["Your Stories", ">4</strong> seen", "1 reacted", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
              "/stories/new": ["Who can see it", "Close Friends", "2 people"],
              f"/stories/{mika.id}": ["Sketching the Kalye Coffee cups today.", 'data-seen-count', ">4</strong>", "Ben Cruz", "❤️"],

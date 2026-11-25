@@ -356,6 +356,28 @@ class StoryMute(Base):
     muted_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
 
+class Activity(Base):
+    """One line on someone's Notifications page (activity.py): who did what that concerns them.
+    kind: mention, reply, reaction, story_new, story_reaction, story_reply, group_added,
+    group_admin, group_removed. The chat, message and story it points to are optional, and
+    deleting them takes the line away (or, for a story, leaves it saying the story ended)."""
+    __tablename__ = "activities"
+    __table_args__ = (Index("ix_activities_user_created", "user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    actor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    conversation_id: Mapped[int | None] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    message_id: Mapped[int | None] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), index=True)
+    story_id: Mapped[int | None] = mapped_column(ForeignKey("stories.id", ondelete="SET NULL"), index=True)
+    emoji: Mapped[str | None] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    actor: Mapped[User] = relationship(foreign_keys=[actor_id])
+
+
 class Reaction(Base):
     """One person's emoji on one message. Pressing it again takes it back."""
     __tablename__ = "reactions"
