@@ -175,6 +175,13 @@ def main():
         page.keyboard.press("Escape")
         page.goto(BASE + "/notifications")
         shot(page, "notifications")
+        # The chat list's ⋯ menu (computers).
+        page.goto(BASE + "/chats")
+        ben = page.locator(".chat-row", has_text="Ben Cruz")
+        ben.hover()
+        ben.locator(".row-menu summary").click()
+        shot(page, "chat-menu")
+        page.keyboard.press("Escape")
 
         # A friend plays Ben, in a second browser.
         page.goto(BASE + "/demo/friends")
@@ -217,6 +224,18 @@ def main():
         time.sleep(.5)
         page.goto(BASE + "/notifications")
         shot(page, "phone-notifications")
+        # A long press on a chat: the preview and its choices (phones).
+        page.goto(BASE + "/chats")
+        link = page.locator(".chat-row", has_text="Ben Cruz").locator("a")
+        box = link.bounding_box()
+        spot = {"pointerType": "touch", "clientX": box["x"] + 80, "clientY": box["y"] + 25, "button": 0, "isPrimary": True}
+        link.dispatch_event("pointerdown", spot)
+        time.sleep(.7)
+        link.dispatch_event("pointerup", spot)
+        link.dispatch_event("click")
+        page.wait_for_selector("[data-peek]")
+        shot(page, "phone-peek")
+        page.keyboard.press("Escape")
         page.goto(BASE + "/chats")
         page.locator(".story-circle", has_text="Carlo").click()
         page.wait_for_selector("[data-story-viewer]")

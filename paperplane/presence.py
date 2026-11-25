@@ -200,8 +200,8 @@ def status_for_page(viewer, person):
     viewer = viewer or (g.get("user") if has_app_context() else None)
     if viewer is not None:
         if "presence_hidden" not in g:
-            from . import blocks
-            g.presence_hidden = blocks.hidden_ids(db.session(), viewer.id)
+            from . import blocks, restrict
+            g.presence_hidden = blocks.hidden_ids(db.session(), viewer.id) | restrict.pair_ids(db.session(), viewer.id)
         if person.id in g.presence_hidden:
             return OFFLINE
     tracker = current_app.extensions.get(KEY)

@@ -1,10 +1,14 @@
 {% from "_macros.html" import avatar %}
 {% from "_icons.html" import icon %}
+{% from "_chat_actions.html" import chat_actions %}
 {# One chat in the list: its picture, name, last message, time and unread count.
-   chat.js updates the preview, time and count live, and moves the row to the top. #}
-{% macro chat_row(row, open_id=None, presence_of=None) %}
+   chat.js updates the preview, time and count live, and moves the row to the top.
+   Beside the time, a ⋯ menu (computers; _chat_actions.html): mute, mark as read, restrict,
+   block, leave, delete. Phones have no ⋯: a long press opens a preview with the same choices
+   (chatmenu.js). page=False for a row drawn for someone else's tab (no CSRF token in it). #}
+{% macro chat_row(row, open_id=None, presence_of=None, page=True) %}
   {% set c = row.conversation %}
-  {% set muted = chat_is_muted(row.membership) %}
+  {% set muted = chat_is_muted(row.membership) or row.restricted %}
   <li class="chat-row{% if c.id == open_id %} is-open{% endif %}{% if row.unread %} has-unread{% endif %}{% if muted %} is-muted{% endif %}{% if row.mentions|default(0) %} has-mention{% endif %}"
       data-chat="{{ c.id }}" data-kind="{{ c.kind }}" data-last-seq="{{ c.last_seq }}"{% if muted %} data-muted="1"{% endif %}{% if row.other %} data-other="{{ row.other.id }}"{% endif %}>
     <a href="{{ url_for('chats.show', chat_id=c.id) }}"{% if c.id == open_id %} aria-current="page"{% endif %}>
@@ -16,7 +20,8 @@
       <span class="chat-row-text">
         <span class="chat-row-top">
           <span class="chat-row-name">{{ row.title }}</span>
-          {% if muted %}<span class="muted-mark" title="Muted">{{ icon('bell-off', 14) }}<span class="visually-hidden">Muted</span></span>{% endif %}
+          {% if row.restricted %}<span class="muted-mark" title="Restricted">{{ icon('shield', 14) }}<span class="visually-hidden">Restricted</span></span>
+          {% elif muted %}<span class="muted-mark" title="Muted">{{ icon('bell-off', 14) }}<span class="visually-hidden">Muted</span></span>{% endif %}
           <time class="chat-row-time" datetime="{{ row.when|iso }}" data-when>{{ row.when|short_when }}</time>
         </span>
         <span class="chat-row-bottom">
@@ -26,5 +31,9 @@
         </span>
       </span>
     </a>
+    <details class="row-menu" data-popover>
+      <summary class="icon-button icon-button-small" title="Options for {{ row.title }}">{{ icon('more', 18) }}<span class="visually-hidden">Options for {{ row.title }}</span></summary>
+      <div class="member-menu-items row-menu-items">{{ chat_actions(row, 'menu', page) }}</div>
+    </details>
   </li>
 {% endmacro %}

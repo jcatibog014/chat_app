@@ -1,0 +1,41 @@
+{% from "_macros.html" import avatar %}
+{% from "_icons.html" import icon %}
+{% from "_chat_actions.html" import chat_actions %}
+{# The phone's long press on a chat (chatmenu.js puts this in a layer over the list): the latest
+   messages, read-only (looking doesn't read the chat), then a card with what you can do. #}
+{% set c = row.conversation %}
+<div class="peek" role="dialog" aria-modal="true" aria-labelledby="peek-title" tabindex="-1" data-peek>
+  <div class="peek-chat">
+    <div class="peek-head">
+      {% if row.other %}{{ avatar(row.other, presence=presence_of(row.other)) }}{% else %}<span class="avatar group-avatar" aria-hidden="true">{{ icon('group', 20) }}</span>{% endif %}
+      <div class="peek-title">
+        <strong id="peek-title">{{ row.title }}</strong>
+        {% if row.restricted %}<small>Restricted</small>{% elif row.blocked %}<small>Blocked</small>{% elif row.other %}<small>{{ presence_words(row.other) }}</small>{% endif %}
+      </div>
+      <a class="button button-small" href="{{ url_for('chats.show', chat_id=c.id) }}">Open</a>
+    </div>
+    <ol class="peek-messages">
+      {% for m in messages %}
+        {% if m.kind == 'system' %}
+          <li class="peek-system">{{ m.body }}</li>
+        {% else %}
+          {% set mine = m.sender_id == g.user.id %}
+          <li class="peek-msg{% if mine %} is-mine{% endif %}">
+            {% if c.is_group and not mine and m.sender %}<small>{{ m.sender.first_name }}</small>{% endif %}
+            <span class="peek-bubble">
+              {%- if m.deleted_at %}<em>Message deleted</em>
+              {%- else %}
+                {%- for a in m.attachment_list|default([]) %}<span class="peek-file">{{ icon('image' if a.kind == 'image' else 'file', 14) }} {{ 'Photo' if a.kind == 'image' else a.filename }}</span>{% endfor %}
+                {%- if m.body %}<span class="peek-text">{{ m.body }}</span>{% endif %}
+              {%- endif %}
+            </span>
+          </li>
+        {% endif %}
+      {% else %}
+        <li class="peek-system">No messages yet.</li>
+      {% endfor %}
+    </ol>
+  </div>
+  <div class="peek-actions card">{{ chat_actions(row, 'card') }}</div>
+  <button class="peek-close" type="button" data-peek-close>{{ icon('x', 18) }}<span>Close</span></button>
+</div>

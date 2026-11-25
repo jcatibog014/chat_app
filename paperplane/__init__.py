@@ -116,7 +116,7 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import activity, auth, blocks, crew, db, formatting, groups, live, notify, presence, previews, seed, stories
+    from . import activity, auth, blocks, crew, db, formatting, groups, live, notify, presence, previews, restrict, seed, stories
     from .views import chats as chat_views
     from .views import demo, settings
     from .views import messages as message_views
@@ -143,6 +143,7 @@ def create_app(test_config=None):
     stories.init_app(app)
     story_views.init_app(app)
     activity.init_app(app)
+    restrict.init_app(app)
     activity_views.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
     for blueprint in (auth.bp, chat_views.bp, message_views.bp, group_views.bp, file_views.bp, notify_views.bp, story_views.bp, activity_views.bp, settings.bp, demo.bp):

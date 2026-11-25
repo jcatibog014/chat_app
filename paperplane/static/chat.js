@@ -433,8 +433,8 @@
     }
     if (data.conversation_id === openId) {
       const words = { removed: "You were removed from this group.", deleted: "This group was deleted.",
-        left: "You left this group." };
-      if (typeof toast === "function") toast(words[data.why] || "This chat is no longer yours to see.", data.why !== "left");
+        left: "You left this group.", cleared: "You deleted this chat." };
+      if (typeof toast === "function") toast(words[data.why] || "This chat is no longer yours to see.", !["left", "cleared"].includes(data.why));
       setTimeout(() => (location.href = "/chats"), 1800);
     }
   });

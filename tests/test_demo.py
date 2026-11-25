@@ -102,7 +102,7 @@ def demo_pages(app, client):
              "/chats/new": ["People You Know", "Dana Lim"],
              "/settings": ["Your Account", "Time Zone"],
              "/settings/appearance": ["Pink", "Purple"], "/settings/notifications": ["On This Device"],
-             "/settings/privacy": ["Show When I'm Online", "Blocked People", "Close Friends", "Muted Stories",
+             "/settings/privacy": ["Show When I'm Online", "Blocked People", "Restricted People", "Close Friends", "Muted Stories",
                                    "Dana Lim"],
              "/settings/devices": ["Leave the Demo"],
              "/notifications": ["<h2>New</h2>", "mentioned you", "posted a story", "reacted", "replied to your story",
@@ -134,6 +134,7 @@ def demo_pages(app, client):
         key = chat.title or creator_handle(app, chat)
         pages[f"/chats/{chat.id}/media"] = ["Photos, Files and Links", media_samples[key]]
         pages[f"/chats/{chat.id}/find"] = ["Search in", "Search This Chat", "From You"]
+        pages[f"/chats/{chat.id}/peek"] = ["data-peek", "peek-bubble", "Delete chat"]
         if chat.title == "Launch Plans":  # Mika's own group: every control, an admin and a working invite link
             pages[f"/chats/{chat.id}/info"] += ["Add People", "Invite Links", "2 of 10 used", "Admin", "Delete the Group"]
     return pages

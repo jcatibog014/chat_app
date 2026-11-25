@@ -1,0 +1,22 @@
+{% from "_macros.html" import avatar, csrf %}
+<section class="card" id="restricted">
+  <h2>Restricted People</h2>
+  {% if restricted_people %}
+    <p class="muted">They can still message you, but you get no notifications from them, their chat stays out of your unread number, and you don't see each other online. They aren't told.</p>
+    <ul class="member-list">
+      {% for person in restricted_people %}
+        <li class="member-row">
+          {{ avatar(person) }}
+          <div class="member-text"><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></div>
+          <form method="post" action="{{ url_for('groups.unrestrict_person', user_id=person.id) }}">
+            {{ csrf() }}
+            <input type="hidden" name="next" value="{{ url_for('settings.page', section='privacy') }}#restricted">
+            <button class="button button-quiet button-small" type="submit">Unrestrict</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">You haven't restricted anyone. To restrict someone, choose ⋯ beside your chat with them (on a phone, press and hold the chat).</p>
+  {% endif %}
+</section>
