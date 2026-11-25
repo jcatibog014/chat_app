@@ -359,6 +359,33 @@ class StoryMute(Base):
     muted_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
 
+class Call(Base):
+    """An audio or video call in a chat (calls.py). It rings while nobody else has joined; it is
+    over when ended_at is set (everyone left, or nobody answered)."""
+    __tablename__ = "calls"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    started_by_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # "audio" or "video"
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime)  # someone besides the caller joined
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class CallParticipant(Base):
+    """Someone in a call: joined (and maybe left), or declined it without joining."""
+    __tablename__ = "call_participants"
+    __table_args__ = (UniqueConstraint("call_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    joined_at: Mapped[datetime | None] = mapped_column(DateTime)
+    left_at: Mapped[datetime | None] = mapped_column(DateTime)
+    declined_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
 class Restriction(Base):
     """restrictor restricted someone (restrict.py): no notifications from them, their chat stays
     out of the unread number, and neither sees the other online. They aren't told."""

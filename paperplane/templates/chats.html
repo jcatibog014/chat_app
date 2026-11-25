@@ -27,6 +27,10 @@
           {% else %}{{ members|length }} members: {% for m in members %}{{ 'you' if m.user_id == g.user.id else m.user.first_name }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}
         </p>
       </div>
+      {# Calls (call.js shows these only where the browser can call: WebRTC, a camera/microphone API). #}
+      {% for kind, symbol, words in (('audio', 'phone', 'Audio call'), ('video', 'video', 'Video call')) %}
+        <button class="icon-button" type="button" data-call-start="{{ kind }}" title="{{ ('Group ' ~ words|lower) if conversation.is_group else words }}" hidden>{{ icon(symbol, 20) }}<span class="visually-hidden">{{ ('Group ' ~ words|lower) if conversation.is_group else words }}</span></button>
+      {% endfor %}
       <a class="icon-button" href="{{ url_for('search.in_chat', chat_id=conversation.id) }}" title="Search in this chat">{{ icon('search', 20) }}<span class="visually-hidden">Search in this chat</span></a>
       <details class="mute-menu" data-popover>
         <summary class="icon-button" title="{{ 'Muted' if chat_is_muted(membership) else 'Mute notifications' }}">{{ icon('bell-off' if chat_is_muted(membership) else 'bell', 20) }}<span class="visually-hidden">Notifications for this chat</span></summary>
@@ -52,6 +56,11 @@
       {% endif %}
     </header>
 
+    <div class="call-banner" data-call-banner{% if call_info %} data-call-id="{{ call_info.id }}" data-call-kind="{{ call_info.kind }}"{% else %} hidden{% endif %}>
+      {{ icon('video' if call_info and call_info.kind == 'video' else 'phone', 16) }}
+      <span data-call-banner-words>{% if call_info %}{{ 'Video' if call_info.kind == 'video' else 'Audio' }} call going on · {{ call_info.count }} in the call{% endif %}</span>
+      <button class="button button-small" type="button" data-call-join>Join</button>
+    </div>
     {% if find_query %}
       <div class="find-bar" data-find-bar>
         {{ icon('search', 16) }}

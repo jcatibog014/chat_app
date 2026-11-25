@@ -8,7 +8,8 @@ Lines are written where things happen (the same transaction, so they can't disag
 - story_new: story_posted, a stories.after_post_hooks step (to everyone who may see it and
   hasn't muted the person; one line per person, freshened by their next story);
 - story_reaction: stories.react;
-- group_added / group_admin / group_owner / group_removed: groups.py.
+- group_added / group_admin / group_owner / group_removed: groups.py;
+- call_missed: calls.end (a call you never joined; emoji holds "audio" or "video").
 
 Never about yourself, never from someone you restricted, never between people who blocked each other (blocking also deletes the
 lines between them), and a deleted message takes its lines with it, so the number in the
@@ -196,7 +197,7 @@ def page(s, user, moment, before=None, limit=None):
         elif item.kind == "story_reaction":
             snippet = story.text if live else None
             url = url_for("stories.view", person_id=user.id, story=story.id) if live else None
-        elif item.kind in ("group_added", "group_admin", "group_owner") and conversation is not None:
+        elif item.kind in ("group_added", "group_admin", "group_owner", "call_missed") and conversation is not None:
             url = url_for("chats.show", chat_id=conversation.id) if conversation.id in memberships else None
         lines.append(Line(item=item, actor=actor, chat_title=conversation.title if conversation is not None else None,
                           snippet=snippet, url=url, story_live=live, is_new=item.read_at is None))

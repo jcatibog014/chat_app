@@ -61,8 +61,9 @@ class Context:
     extra: dict = field(default_factory=dict)
 
 
-def on(kind, limit=None, **fields):
-    """Register a handler. fields: name=(type, required) or (type, required, max_length)."""
+def on(kind, /, limit=None, **fields):
+    """Register a handler. fields: name=(type, required) or (type, required, max_length).
+    (kind is positional-only, so an event may have a field called "kind" too: call.start.)"""
     def register(function):
         HANDLERS[kind] = Spec(function, fields, limit)
         return function

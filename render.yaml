@@ -33,3 +33,9 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false           # optional: mailto:you@example.com, for the push services
+      - key: TURN_URL
+        sync: false           # optional: a relay for calls on networks that block direct calls (docs/DEPLOY.md, Part 5)
+      - key: TURN_USERNAME
+        sync: false
+      - key: TURN_CREDENTIAL
+        sync: false

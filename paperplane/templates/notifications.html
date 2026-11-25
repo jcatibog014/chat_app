@@ -20,13 +20,15 @@
   {% elif k == 'group_admin' %} made you an admin of <strong>{{ place }}</strong>
   {% elif k == 'group_owner' %} made you the owner of <strong>{{ place }}</strong>
   {% elif k == 'group_removed' %} removed you from <strong>{{ place }}</strong>
+  {% elif k == 'call_missed' %} called you{% if place %} in <strong>{{ place }}</strong>{% endif %} (missed {{ 'video' if line.item.emoji == 'video' else 'audio' }} call)
   {% endif %}
 {%- endmacro %}
 
 {% macro kind_badge(line) -%}
   {% set k = line.item.kind %}
-  <span class="activity-kind activity-{{ k.split('_')[0] }}{% if line.item.emoji %} has-emoji{% endif %}" aria-hidden="true">
-    {%- if line.item.emoji %}{{ line.item.emoji }}
+  <span class="activity-kind activity-{{ k.split('_')[0] }}{% if line.item.emoji and k != 'call_missed' %} has-emoji{% endif %}" aria-hidden="true">
+    {%- if k == 'call_missed' %}{{ icon('video' if line.item.emoji == 'video' else 'phone', 13) }}
+    {%- elif line.item.emoji %}{{ line.item.emoji }}
     {%- elif k == 'mention' %}{{ icon('at', 13) }}
     {%- elif k in ('reply', 'story_reply') %}{{ icon('reply', 13) }}
     {%- elif k.startswith('story') %}{{ icon('stories', 13) }}
@@ -60,7 +62,7 @@
   {% endcall %}
   <p class="activity-refresh" data-activity-refresh hidden><a class="button button-small" href="{{ url_for('activity.page') }}">Show new notifications</a></p>
   {% if not new and not earlier %}
-    {{ empty('No Notifications Yet', 'When someone mentions you, replies to you, reacts, posts a story, or adds you to a group, it shows here.') }}
+    {{ empty('No Notifications Yet', 'When someone mentions you, replies to you, reacts, posts a story, adds you to a group, or calls you while you\'re away, it shows here.') }}
   {% else %}
     {% if new %}
       <section class="activity-section">

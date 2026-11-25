@@ -28,10 +28,11 @@
   <script src="{{ url_for('static', filename='find.js') }}" defer></script>
   <script src="{{ url_for('static', filename='activity.js') }}" defer></script>
   <script src="{{ url_for('static', filename='chatmenu.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='call.js') }}" defer></script>
   {% endif %}
   {% block scripts %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}"{% if g.user %} data-me="{{ g.user.id }}" data-handle="{{ g.user.handle }}" data-time-zone="{{ g.user.time_zone }}"{% endif %}>
+<body class="{% block body_class %}{% endblock %}"{% if g.user %} data-me="{{ g.user.id }}" data-me-name="{{ g.user.first_name }}" data-me-tone="{{ g.user.tone }}" data-handle="{{ g.user.handle }}" data-time-zone="{{ g.user.time_zone }}"{% endif %}>
   <a class="skip-link" href="#main">Skip to content</a>
   {% block layout %}
   <div class="app">
@@ -44,5 +45,10 @@
   </div>
   {% endblock %}
   {% include "_toasts.html" %}
+  {% if g.user %}
+    {# The call screen's icons (call.js copies them; drawn here so no icon font is needed). #}
+    {% from "_icons.html" import icon as call_icon %}
+    <div class="call-icons" hidden>{% for name in ('phone', 'video', 'phone-off', 'mic', 'mic-off', 'video-off', 'minimize') %}<span data-call-icon="{{ name }}">{{ call_icon(name, 24) }}</span>{% endfor %}</div>
+  {% endif %}
 </body>
 </html>

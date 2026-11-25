@@ -52,7 +52,9 @@ def open_chat(page, title):
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(channel="msedge")
+        # A pretend camera and microphone (a test picture), allowed without asking: for the call pictures.
+        browser = playwright.chromium.launch(channel="msedge", args=["--use-fake-ui-for-media-stream",
+                                                                     "--use-fake-device-for-media-stream"])
 
         # ---------- Before logging in ----------
         context = browser.new_context(viewport=DESKTOP, color_scheme="light")
@@ -199,6 +201,20 @@ def main():
         friend.keyboard.press("Enter")
         time.sleep(1.5)
         shot(page, "friend-live")
+        # A video call between the two real people (the camera is Edge's test picture).
+        page.click("[data-call-start=video]")
+        friend.wait_for_selector(".call-incoming")
+        time.sleep(0.6)
+        shot(friend, "call-incoming")
+        friend.locator(".call-answer").click()
+        for _ in range(30):
+            time.sleep(0.5)
+            if page.evaluate("[...document.querySelectorAll('.call-tile:not(.is-me) video')].some(v => v.videoWidth > 0)"):
+                break
+        time.sleep(2)
+        shot(page, "video-call")
+        page.locator(".call-end").click()
+        time.sleep(1)
         friend_context.close()
         context.close()
 

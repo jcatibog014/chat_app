@@ -95,6 +95,12 @@ def create_app(test_config=None):
         VAPID_PUBLIC_KEY=os.environ.get("VAPID_PUBLIC_KEY", ""),
         VAPID_PRIVATE_KEY=os.environ.get("VAPID_PRIVATE_KEY", ""),
         VAPID_SUBJECT=os.environ.get("VAPID_SUBJECT", ""),
+        # Calls (calls.py): STUN finds each browser's public address (Google's free one by default);
+        # a TURN server relays a call when two networks can't reach each other (optional, paid).
+        STUN_URL=os.environ.get("STUN_URL", ""),
+        TURN_URL=os.environ.get("TURN_URL", ""),
+        TURN_USERNAME=os.environ.get("TURN_USERNAME", ""),
+        TURN_CREDENTIAL=os.environ.get("TURN_CREDENTIAL", ""),
     )
     if test_config:
         app.config.update(test_config)
@@ -116,7 +122,7 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import activity, auth, blocks, crew, db, formatting, groups, live, notify, presence, previews, restrict, seed, stories
+    from . import activity, auth, blocks, calls, crew, db, formatting, groups, live, notify, presence, previews, restrict, seed, stories
     from .views import chats as chat_views
     from .views import demo, settings
     from .views import messages as message_views
@@ -151,6 +157,7 @@ def create_app(test_config=None):
     # After the blueprints: the WebSocket handshake check needs auth.load_user to have run first.
     live.init_app(app)
     presence.init_app(app)
+    calls.init_app(app)  # after live: it watches the hub for tabs closing in a call
     crew.init_app(app)
 
     from .dates import utcnow
