@@ -11,17 +11,16 @@ def user(app, user_id):
 
 
 PAGES = {
-    "account": ["Your Account", "Time Zone"],
-    "appearance": ["Colour", "Pink", "Purple", "Red", "Blue", "Light or Dark"],
-    "notifications": ["Notifications", "On This Device"],
-    "privacy": ["Show When I'm Online", "Blocked People"],
+    "general": ["Your Account", "Time Zone"],
+    "appearance": ["Colour", "Pink", "Purple", "Red", "Blue", "Light or Dark", "Device", "Light", "Dark"],
+    "preferences": ["Notifications", "On This Device", "Show When I'm Online", "Blocked People"],
     "devices": ["Log Out Other Devices", "Log Out"],
 }
 
 
 def address(name):
-    """Account is Settings' first page, at /settings itself (/settings/account redirects there)."""
-    return "/settings" if name == "account" else f"/settings/{name}"
+    """General is Settings' first tab, at /settings itself."""
+    return "/settings" if name == "general" else f"/settings/{name}"
 
 
 def test_settings_has_a_page_for_each_part(maria):
@@ -30,21 +29,32 @@ def test_settings_has_a_page_for_each_part(maria):
         page = words(client.get(address(name)))
         for heading in headings:
             assert heading in page, (name, heading)
-    # /settings opens Account, and nothing from the other pages.
+    # /settings opens General, and nothing from the other tabs.
     page = words(client.get("/settings"))
     assert "Your Account" in page and "Log Out Other Devices" not in page and "Blocked People" not in page
 
 
-def test_settings_has_one_small_menu_to_its_pages(maria):
+def test_settings_has_tabs_at_the_top(maria):
     client, _ = maria
-    page = client.get("/settings/privacy").get_data(as_text=True)
-    menu = page.split('aria-label="Settings pages"', 1)[1].split("</nav>", 1)[0]
-    for name in PAGES:
-        assert f'href="{address(name)}"' in menu
-    assert menu.count('aria-current="page"') == 1 and 'href="/settings/privacy" aria-current="page"' in menu
+    page = client.get("/settings/preferences").get_data(as_text=True)
+    assert 'class="settings-nav"' not in page  # no second menu beside the cards
+    menu = page.split('<nav class="tabs settings-tabs" aria-label="Settings">', 1)[1].split("</nav>", 1)[0]
+    assert [name for name in PAGES if f'href="{address(name)}"' in menu] == list(PAGES)
+    assert menu.count('aria-current="page"') == 1
+    assert 'aria-current="page"' in menu.split('href="/settings/preferences"', 1)[1].split("</a>", 1)[0]
     # The way IN stays one link, in the profile menu (the sky menu has no Settings entry).
     sky = page.split('<ul class="side-links">', 1)[1].split("</ul>", 1)[0]
     assert "/settings" not in sky
+
+
+def test_the_old_pages_go_to_their_new_tab(maria):
+    client, _ = maria
+    for old, new in (("account", "/settings"), ("notifications", "/settings/preferences"), ("privacy", "/settings/preferences")):
+        response = client.get(f"/settings/{old}")
+        assert response.status_code == 302 and response.headers["Location"] == new, old
+    # A form posted to an old address still works, and comes back to the new tab.
+    response = post(client, "/settings/privacy", {"action": "show_presence", "show_presence": "0"})
+    assert response.headers["Location"].startswith("/settings/preferences")
 
 
 def test_an_unknown_settings_page_is_not_found(maria):

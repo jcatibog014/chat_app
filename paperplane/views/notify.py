@@ -86,7 +86,7 @@ def forget_devices():
     s.commit()
     flash(f"Phone and browser notifications are off on {count} device{'s' if count != 1 else ''}." if count
           else "No device had notifications on.")
-    return redirect(url_for("settings.page", section="notifications"))
+    return redirect(url_for("settings.page", section="preferences", _anchor="notifications"))
 
 
 def notifications_section(s, user):

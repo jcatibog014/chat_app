@@ -26,7 +26,13 @@
 
       <section class="card" id="people">
         <div class="card-head"><h2>People</h2></div>
-        <ul class="member-list">
+        <label class="people-search js-only">
+          <span class="visually-hidden">Search people in {{ conversation.title }}</span>
+          {{ icon('search', 16) }}
+          <input type="search" placeholder="Search people" autocomplete="off" data-people-search>
+        </label>
+        <p class="muted small" data-people-none hidden>Nobody here by that name.</p>
+        <ul class="member-list" data-people>
           {% for m in members %}
             {% set me = m.user_id == g.user.id %}
             <li class="member-row">
@@ -85,6 +91,10 @@
             </li>
           {% endfor %}
         </ul>
+              <form class="leave-link" method="post" action="{{ url_for('groups.leave', chat_id=conversation.id) }}" data-confirm="Leave {{ conversation.title }}?{% if membership.role == 'owner' %} An admin (or the longest member) becomes the owner.{% endif %}">
+          {{ csrf() }}
+          <button class="text-danger" type="submit">{{ icon('leave', 16) }} Leave Group</button>
+        </form>
       </section>
     </div>
 
@@ -168,20 +178,10 @@
       </section>
       {% endif %}
 
-      <section class="card" id="leave">
-        <h2>Leave{% if can('delete_group') %} or Delete{% endif %}</h2>
+      {% if can('delete_group') %}
+      <section class="card" id="delete">
+        <h2>Delete the Group</h2>
         <div class="setting-row first">
-          <div>
-            <h3>Leave the Group</h3>
-            <p class="muted small">{% if membership.role == 'owner' %}An admin (or the longest member) becomes the owner.{% else %}You can come back if someone adds you.{% endif %}</p>
-          </div>
-          <form method="post" action="{{ url_for('groups.leave', chat_id=conversation.id) }}" data-confirm="Leave {{ conversation.title }}?">
-            {{ csrf() }}
-            <button class="button button-quiet" type="submit">{{ icon('leave', 18) }} Leave group</button>
-          </form>
-        </div>
-        {% if can('delete_group') %}
-        <div class="setting-row">
           <div>
             <h3>Delete the Group</h3>
             <p class="muted small">For everyone, with all its messages. This can't be undone.</p>
@@ -191,8 +191,8 @@
             <button class="button button-danger" type="submit">{{ icon('trash', 18) }} Delete group</button>
           </form>
         </div>
-        {% endif %}
       </section>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

@@ -34,7 +34,7 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Notifications | One page for what concerns you: mentions, replies and reactions to your messages, new stories, reactions and replies to yours, and being added to a group or made an admin. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
 | Colours | Pink (like the logo) is the default. You can choose purple, red or blue, and light or dark. |
-| Settings | Settings has pages: Account, Appearance, Notifications, Privacy and Devices. |
+| Settings | Settings has four tabs: General (your account and time zone), Appearance, Preferences (notifications and privacy) and Devices. |
 | App | Install Paper Plane on your phone's home screen. |
 | Demo | Try the demo, with made-up teammates who answer. |
 
@@ -90,7 +90,7 @@ Open a story and it plays for 5 seconds, then the next one starts. Tap the left 
 | --- | --- |
 | ![Watching Ana's story](docs/screenshots/story-viewer.png) | ![Seen by, with Ben's reaction](docs/screenshots/story-seen-by.png) |
 
-Each time you post, you choose who can see it: **everyone you chat with**, or only your **Close Friends** (Settings > Privacy). A reply to your story shows a small picture of it in the chat, or "Story expired" after 24 hours.
+Each time you post, you choose who can see it: **everyone you chat with**, or only your **Close Friends** (Settings > Preferences). A reply to your story shows a small picture of it in the chat, or "Story expired" after 24 hours.
 
 | A new story | A reply in the chat |
 | --- | --- |
@@ -119,7 +119,7 @@ Point at a chat in the list and a **⋯** shows beside its time: **Mute**, **Mar
 | ![The chat list menu](docs/screenshots/chat-menu.png) | ![The preview and its choices](docs/screenshots/phone-peek.png) |
 
 - **Delete chat** deletes it only for you. Nobody else loses anything, and the chat comes back if someone sends a new message (with only the new messages).
-- **Restrict** is quieter than blocking. They can still message you, but you get no notifications from them, their chat stays out of your unread number, and you don't see each other online. They aren't told. Undo it from the same menu, or in Settings > Privacy > Restricted People.
+- **Restrict** is quieter than blocking. They can still message you, but you get no notifications from them, their chat stays out of your unread number, and you don't see each other online. They aren't told. Undo it from the same menu, or in Settings > Preferences > Restricted People.
 
 ### Notifications
 
@@ -159,7 +159,7 @@ Click your picture to open your profile menu: Settings, and Log out.
 
 ### Colours
 
-Settings has a page for each part: Account, Appearance, Notifications, Privacy and Devices. In **Appearance** you choose the app's colour: pink (the logo's colour, the default), purple, red or blue. Your colour is saved to your account, so it is the same on every device.
+Settings has four tabs at the top: **General** (your name, password and time zone), **Appearance**, **Preferences** (notifications, who sees you online, Close Friends, muted stories, and the people you restrict or block) and **Devices**. In **Appearance** you choose the app's colour: pink (the logo's colour, the default), purple, red or blue. Your colour is saved to your account, so it is the same on every device.
 
 ![The Appearance page](docs/screenshots/appearance.png)
 

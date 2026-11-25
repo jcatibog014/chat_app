@@ -165,7 +165,7 @@ def mute(person_id):
     person = s.get(User, person_id)
     stories.mute(s, g.user, person_id)
     s.commit()
-    flash(f"You won't see {person.first_name}'s stories. Unmute in Settings, Privacy.")
+    flash(f"You won't see {person.first_name}'s stories. Unmute in Settings, Preferences.")
     return redirect(url_for("stories.index"))
 
 
@@ -177,7 +177,7 @@ def unmute(person_id):
     s.commit()
     person = s.get(User, person_id)
     flash(f"You'll see {person.first_name if person else 'their'} stories again.")
-    return redirect(safe_next(request.form.get("next"), url_for("settings.page", section="privacy")))
+    return redirect(safe_next(request.form.get("next"), url_for("settings.page", section="preferences", _anchor="muted-stories")))
 
 
 def picture(story_id, column):
@@ -204,7 +204,7 @@ def thumb(story_id):
     return picture(story_id, "thumb")
 
 
-# ---------- Settings, Privacy: Close Friends and Muted Stories ----------
+# ---------- Settings, Preferences: Close Friends and Muted Stories ----------
 
 def save_close_friends(s, user, form):
     ids = {int(value) for value in form.getlist("friend") if value.isdigit()}

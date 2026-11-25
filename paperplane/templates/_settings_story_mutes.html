@@ -10,7 +10,7 @@
           <div class="member-text"><strong>{{ person.name }}</strong><small>@{{ person.handle }}</small></div>
           <form method="post" action="{{ url_for('stories.unmute', person_id=person.id) }}">
             {{ csrf() }}
-            <input type="hidden" name="next" value="{{ url_for('settings.page', section='privacy') }}#muted-stories">
+            <input type="hidden" name="next" value="{{ url_for('settings.page', section='preferences') }}#muted-stories">
             <button class="button button-quiet button-small" type="submit">Unmute</button>
           </form>
         </li>

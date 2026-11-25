@@ -5,21 +5,15 @@
 {% macro posted(name, default) %}{{ form.get(name, default) if form else default }}{% endmacro %}
 {% block content %}
   {{ page_head('Settings') }}
+  {# The tabs: a row at the top of the page (not a second menu beside the cards). #}
+  <nav class="tabs settings-tabs" aria-label="Settings">
+    {% for name, title, icon_name, about in pages %}
+      <a href="{{ url_for('settings.page', section=None if name == 'general' else name) }}" title="{{ about }}"{% if name == section %} aria-current="page"{% endif %}>{{ icon(icon_name, 18) }}<span>{{ title }}</span></a>
+    {% endfor %}
+  </nav>
   <div class="settings-layout">
-    {# Settings' own small menu: its pages. (The one way INTO Settings is the profile menu.) #}
-    <nav class="settings-nav" aria-label="Settings pages">
-      <ul>
-        {% for name, title, icon_name, about in pages %}
-          <li><a href="{{ url_for('settings.page', section=name) }}"{% if name == section %} aria-current="page"{% endif %}>
-            {{ icon(icon_name, 20) }}
-            <span><strong>{{ title }}</strong><small>{{ about }}</small></span>
-          </a></li>
-        {% endfor %}
-      </ul>
-    </nav>
-
     <div class="settings">
-    {% if section == 'account' %}
+    {% if section == 'general' %}
       <section class="card" id="account">
         <h2>Your Account</h2>
         {% if g.user.is_demo %}
@@ -110,12 +104,13 @@
       <section class="card" id="mode" data-theme-settings>
         <h2>Light or Dark</h2>
         <p class="muted">Saved on this device.</p>
-        <fieldset class="choices js-only">
+        <fieldset class="segmented js-only">
           <legend class="visually-hidden">Light or dark</legend>
-          <label class="check"><input type="radio" name="theme" value="system"> Same as this device</label>
-          <label class="check"><input type="radio" name="theme" value="light"> Light</label>
-          <label class="check"><input type="radio" name="theme" value="dark"> Dark</label>
+          {% for value, label, symbol in (('system', 'Device', 'monitor'), ('light', 'Light', 'sun'), ('dark', 'Dark', 'moon')) %}
+            <label class="segment"><input type="radio" name="theme" value="{{ value }}">{{ icon(symbol, 18) }}<span>{{ label }}</span></label>
+          {% endfor %}
         </fieldset>
+        <p class="muted small top-gap js-only">Device follows your phone's or computer's own setting.</p>
         <p class="muted no-js-only">The app follows your device's setting. Turn on JavaScript to choose here.</p>
       </section>
 

@@ -15,9 +15,11 @@
         {% for story in my_stories %}
           {% set views, reactions = stats.get(story.id, (0, 0)) %}
           <li class="story-tile">
-            <a href="{{ url_for('stories.view', person_id=g.user.id, story=story.id) }}">{{ story_card(story) }}</a>
+            <a class="story-tile-link" href="{{ url_for('stories.view', person_id=g.user.id, story=story.id) }}" title="View your story">
+              {{ story_card(story) }}
+              <span class="story-tile-over">{{ icon('eye', 16) }} <strong data-seen-count="{{ story.id }}">{{ views }}</strong> seen{% if reactions %} · {{ reactions }} reacted{% endif %}</span>
+            </a>
             <div class="story-tile-info">
-              <span><strong data-seen-count="{{ story.id }}">{{ views }}</strong> seen{% if reactions %} · {{ reactions }} reacted{% endif %}</span>
               <small>{{ story.created_at|ago }}{% if story.audience == 'close' %} · <span class="close-tag">Close Friends</span>{% endif %}</small>
             </div>
           </li>
@@ -55,7 +57,7 @@
       {{ empty('Nothing New', 'When people you chat with share a story, it shows here for 24 hours.') }}
     {% endif %}
     {% if muted_count %}
-      <p class="muted small top-gap">You muted {{ muted_count }} {{ 'person' if muted_count == 1 else 'people' }}'s stories. <a href="{{ url_for('settings.page', section='privacy') }}#muted-stories">Change this in Settings</a>.</p>
+      <p class="muted small top-gap">You muted {{ muted_count }} {{ 'person' if muted_count == 1 else 'people' }}'s stories. <a href="{{ url_for('settings.page', section='preferences') }}#muted-stories">Change this in Settings</a>.</p>
     {% endif %}
   </section>
 {% endblock %}

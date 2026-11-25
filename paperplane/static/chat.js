@@ -86,6 +86,27 @@
   // ---------- Reading ----------
 
   const nearBottom = () => !scroller || Math.abs(scroller.scrollTop) < 120; // column-reverse: 0 is the bottom
+
+  // Scrolled up into the history: a round button takes you back down (with how many came since).
+  const toLatest = document.querySelector("[data-to-latest]");
+  const toLatestCount = document.querySelector("[data-to-latest-count]");
+  let missed = 0;
+  function drawToLatest() {
+    if (!toLatest) return;
+    const away = scroller && Math.abs(scroller.scrollTop) > 300;
+    toLatest.hidden = !away;
+    if (!away) missed = 0;
+    toLatestCount.hidden = missed === 0;
+    toLatestCount.textContent = missed > 99 ? "99+" : String(missed);
+  }
+  if (toLatest && scroller) {
+    scroller.addEventListener("scroll", drawToLatest, { passive: true });
+    toLatest.addEventListener("click", () => {
+      scroller.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      missed = 0;
+      drawToLatest();
+    });
+  }
   const reading = () => openId !== null && document.visibilityState === "visible" && nearBottom();
 
   function markRead(seq) {
@@ -367,7 +388,13 @@
   Live.on("message.new", (m) => {
     const mine = m.sender_id === me;
     updateRow(m);
-    if (m.conversation_id === openId) showMessage(m);
+    if (m.conversation_id === openId) {
+      showMessage(m);
+      if (!mine && toLatest && !toLatest.hidden) {
+        missed += 1;
+        drawToLatest();
+      }
+    }
     if (mine) return;
     if (m.conversation_id === openId && reading()) {
       markRead(m.seq);
@@ -760,7 +787,12 @@
       say("This browser can't show notifications.");
       return;
     }
-    if (Notification.permission === "granted" && !button.dataset.key) button.textContent = "Notifications are on";
+    // Off: the page's main action (a solid button). On: it says so, quietly.
+    const isOn = () => {
+      button.textContent = "Notifications are on";
+      button.classList.add("button-quiet");
+    };
+    if (Notification.permission === "granted" && !button.dataset.key) isOn();
     button.addEventListener("click", async () => {
       try {
         if ((await Notification.requestPermission()) !== "granted") {
@@ -769,7 +801,7 @@
         }
         const key = button.dataset.key;
         if (!key || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-          button.textContent = "Notifications are on";
+          isOn();
           say("You'll get notifications while Paper Plane is open in a tab.");
           return;
         }
@@ -782,7 +814,7 @@
           headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
           body: JSON.stringify(subscription),
         });
-        button.textContent = "Notifications are on";
+        if (response.ok) isOn();
         say(response.ok ? "This device gets notifications, even when no tab is open." : "That didn't work. Please try again.");
       } catch (error) {
         say("This browser couldn't turn on notifications.");

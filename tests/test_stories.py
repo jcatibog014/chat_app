@@ -287,7 +287,7 @@ def test_muting_hides_someones_stories_until_unmuted(app, crowd):
     finn_id = crowd["ids"]["finn"]
     assert post(ella, f"/stories/people/{finn_id}/mute").status_code == 302
     assert "Finn" not in text(ella.get("/stories/tray")) and "Finn's story" not in text(ella.get("/stories"))
-    privacy = words(ella.get("/settings/privacy"))
+    privacy = words(ella.get("/settings/preferences"))
     assert "Muted Stories" in privacy and "Finn Person" in privacy
     # Muting only hides: the story can still be opened from a link.
     assert ella.get(f"/stories/{finn_id}").status_code == 200

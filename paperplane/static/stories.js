@@ -89,11 +89,13 @@
     const parts = form.querySelectorAll("[data-story-part]");
     const text = form.querySelector("[data-story-text]");
     const card = form.querySelector("[data-story-card-preview]");
+    const label = form.querySelector("[data-story-text-label]");
     const show = () => {
       const kind = form.querySelector("[data-story-kind]:checked").value;
       parts.forEach((part) => (part.hidden = part.dataset.storyPart !== kind));
       text.required = kind === "text";
-      text.placeholder = kind === "text" ? "What's new?" : "Add a caption (you may leave this out)";
+      text.placeholder = kind === "text" ? "What's new?" : "Add a caption...";
+      label.innerHTML = kind === "text" ? "Text" : 'Caption <span class="hint">(optional)</span>';
     };
     form.querySelectorAll("[data-story-kind]").forEach((choice) => choice.addEventListener("change", show));
     show();
@@ -108,13 +110,32 @@
     const photo = form.querySelector("[data-story-photo]");
     const preview = form.querySelector("[data-story-preview]");
     let url = null;
+    const zone = form.querySelector("[data-dropzone]");
     photo.addEventListener("change", () => {
       if (url) URL.revokeObjectURL(url);
       const file = photo.files[0];
       url = file ? URL.createObjectURL(file) : null;
       preview.hidden = !url;
+      if (zone) zone.classList.toggle("has-file", Boolean(url));
       if (url) preview.src = url;
     });
+    // Drag a picture onto the box: it becomes the chosen file.
+    if (zone) {
+      ["dragenter", "dragover"].forEach((type) => zone.addEventListener(type, (event) => {
+        event.preventDefault();
+        zone.classList.add("is-over");
+      }));
+      ["dragleave", "drop"].forEach((type) => zone.addEventListener(type, () => zone.classList.remove("is-over")));
+      zone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if (!files || !files.length) return;
+        const chosen = new DataTransfer();
+        chosen.items.add(files[0]);
+        photo.files = chosen.files;
+        photo.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
   }
 
   // A reply to a story, seen by the story's owner: "Replied to your story".

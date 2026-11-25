@@ -11,9 +11,10 @@ Lines are written where things happen (the same transaction, so they can't disag
 - group_added / group_admin / group_owner / group_removed: groups.py;
 - call_missed: calls.end (a call you never joined; emoji holds "audio" or "video").
 
+A line is read when you click it (or "Mark all as read"); opening the page doesn't read them.
 Never about yourself, never from someone you restricted, never between people who blocked each other (blocking also deletes the
 lines between them), and a deleted message takes its lines with it, so the number in the
-menu always matches what the page shows. Opening the page marks everything read. Each change
+menu always matches what the page shows. Each change
 sends "activity.count" {unread} to the person's tabs (activity.js updates the menu's number).
 """
 from dataclasses import dataclass
@@ -142,16 +143,33 @@ class Line:
 
 def page(s, user, moment, before=None, limit=None):
     """([Line], more?) newest first."""
-    from flask import url_for
-
-    from . import stories
     limit = limit or PAGE
     query = select(Activity).where(Activity.user_id == user.id)
     if before is not None:
         query = query.where(Activity.id < before)
     items = s.scalars(query.order_by(Activity.created_at.desc(), Activity.id.desc()).limit(limit + 1)).all()
     more = len(items) > limit
-    items = items[:limit]
+    return lines_for(s, user, items[:limit], moment), more
+
+
+def open_line(s, user, activity_id, moment):
+    """Clicking a line: it's read now. Returns the Line (its url is where to go), or None."""
+    item = s.get(Activity, activity_id)
+    if item is None or item.user_id != user.id:
+        return None
+    lines = lines_for(s, user, [item], moment)
+    if item.read_at is None:
+        item.read_at = moment
+        s.flush()
+        tell(s, {user.id})
+    return lines[0] if lines else None
+
+
+def lines_for(s, user, items, moment):
+    """The page's Lines for these rows: who, the words, and where each leads (if you may go)."""
+    from flask import url_for
+
+    from . import stories
 
     def load(model, ids):
         ids = {i for i in ids if i}
@@ -201,7 +219,7 @@ def page(s, user, moment, before=None, limit=None):
             url = url_for("chats.show", chat_id=conversation.id) if conversation.id in memberships else None
         lines.append(Line(item=item, actor=actor, chat_title=conversation.title if conversation is not None else None,
                           snippet=snippet, url=url, story_live=live, is_new=item.read_at is None))
-    return lines, more
+    return lines
 
 
 def init_app(app):

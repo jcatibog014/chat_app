@@ -101,8 +101,8 @@ def demo_pages(app, client):
     pages = {"/chats": ["Papel Studio", "Weekend Hike", "Launch Plans", "Ana Reyes", "Ben Cruz", "Carlo Diaz"],
              "/chats/new": ["People You Know", "Dana Lim"],
              "/settings": ["Your Account", "Time Zone"],
-             "/settings/appearance": ["Pink", "Purple"], "/settings/notifications": ["On This Device"],
-             "/settings/privacy": ["Show When I'm Online", "Blocked People", "Restricted People", "Close Friends", "Muted Stories",
+             "/settings/appearance": ["Pink", "Purple"],
+             "/settings/preferences": ["On This Device", "Show When I'm Online", "Blocked People", "Restricted People", "Close Friends", "Muted Stories",
                                    "Dana Lim"],
              "/settings/devices": ["Leave the Demo"],
              "/notifications": ["<h2>New</h2>", "mentioned you", "posted a story", "reacted", "replied to your story",
@@ -120,7 +120,7 @@ def demo_pages(app, client):
         pages[f"/stories/{person}"] = ["story-face"]
     for chat in chats:
         pages[f"/chats/{chat.id}"] = ["msg-text"]
-        pages[f"/chats/{chat.id}/info"] = ["Group Info", "People", "Leave the Group"] if chat.is_group else ["Chat Info", "Block"]
+        pages[f"/chats/{chat.id}/info"] = ["Group Info", "People", "Leave Group", "Search people"] if chat.is_group else ["Chat Info", "Block"]
         samples = {"Papel Studio": 'class="photo"', "Weekend Hike": 'class="link-card"', "Launch Plans": 'class="file-card"',
                    None: 'class="story-quote"'}
         if chat.title is None and chat.created_by_id != story_replier(app, mika):

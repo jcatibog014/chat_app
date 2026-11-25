@@ -13,9 +13,6 @@
         <small>@{{ g.user.handle }}</small>
       </div>
     </div>
-    {% if g.user.is_demo %}
-      <p class="account-demo"><span class="demo-chip">Demo</span> A sample team, just for you. Everything is deleted 24 hours after you started.</p>
-    {% endif %}
     <a class="menu-item" role="menuitem" href="{{ url_for('settings.page') }}">{{ icon('settings', 18) }} Settings</a>
     {% if g.user.is_demo and not g.user.is_bot and has_page('demo.friends') %}
       <a class="menu-item" role="menuitem" href="{{ url_for('demo.friends') }}">{{ icon('person', 18) }} Invite a friend</a>

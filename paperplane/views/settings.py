@@ -1,8 +1,11 @@
-"""Settings, in pages: Account, Appearance, Notifications, Privacy, Devices.
+"""Settings, in four tabs (PR #12): General (your account and time zone), Appearance,
+Preferences (notifications and privacy together) and Devices.
 
-There is ONE way in (Settings in the profile menu) and a small menu inside
-Settings to move between its pages (settings.html). /settings opens Account.
-Every form posts to the page it is on and comes back to it.
+There is ONE way in (Settings in the profile menu); the tabs sit in a row at the top of the
+page (settings.html), not in a second menu beside it. /settings opens General. The old pages'
+addresses (/settings/account, /settings/notifications, /settings/privacy) still work: a visit
+is sent to the new tab, and a form posted there is handled as before. Every form posts to the
+tab it is on and comes back to it.
 
 Other parts of the app add their own sections (who sees you online, blocked
 people, notifications): `extras` give the templates and their data, and
@@ -18,26 +21,35 @@ from ..dates import is_zone, zone_choices
 
 bp = Blueprint("settings", __name__)
 
-# The pages, in the order of the menu: (address, title, icon, a few words about it).
+# The tabs, in order: (address, title, icon, a few words about it).
 PAGES = [
-    ("account", "Account", "person", "Your name, password and time zone"),
+    ("general", "General", "person", "Your name, password and time zone"),
     ("appearance", "Appearance", "palette", "Colour, and light or dark"),
-    ("notifications", "Notifications", "bell", "Notifications on your devices"),
-    ("privacy", "Privacy", "shield", "Who sees you online, blocked people"),
+    ("preferences", "Preferences", "bell", "Notifications, privacy, and the people you block"),
     ("devices", "Devices", "devices", "Install the app, log out"),
 ]
 PAGE_NAMES = [name for name, *_rest in PAGES]
+# The pages before PR #12, and the tab each became.
+OLD_PAGES = {"account": "general", "notifications": "preferences", "privacy": "preferences"}
+
+
+def tab_of(name):
+    """The tab a page name means (an old name, or a section's page as another module wrote it)."""
+    return OLD_PAGES.get(name, name)
 
 # Sections other modules add: action name -> function(s, user, form) -> (errors, message)
 actions = {}
 # Extra things the pages show: function(s, user) -> dict (settings_sections: templates to include)
 extras = []
-SECTION_ORDER = ["_settings_notifications.html", "_settings_presence.html", "_settings_blocked.html"]
+# Preferences shows notifications first, then privacy: who sees you online, your Close Friends and
+# muted stories, then the people you restricted or blocked.
+SECTION_ORDER = ["_settings_notifications.html", "_settings_presence.html", "_settings_close_friends.html",
+                 "_settings_story_mutes.html", "_settings_restricted.html", "_settings_blocked.html"]
 SECTION_PAGES = {"_settings_notifications.html": "notifications", "_settings_presence.html": "privacy",
                  "_settings_blocked.html": "privacy"}
 # Which page an action comes back to.
-ACTION_PAGES = {"name": "account", "password": "account", "recovery": "account", "time_zone": "account",
-                "accent": "appearance", "show_presence": "privacy", "logout_others": "devices"}
+ACTION_PAGES = {"name": "general", "password": "general", "recovery": "general", "time_zone": "general",
+                "accent": "appearance", "show_presence": "preferences", "logout_others": "devices"}
 
 ACCENTS = [
     ("pink", "Pink", "The logo's colour"),
@@ -83,21 +95,26 @@ actions["accent"] = save_accent
 
 
 def back(section):
-    return redirect(url_for("settings.page", section=section))
+    section = tab_of(section)
+    return redirect(url_for("settings.page", section=None if section == "general" else section))
 
 
-@bp.route("/settings", methods=["GET", "POST"], defaults={"section": "account"})
+@bp.route("/settings", methods=["GET", "POST"], defaults={"section": "general"})
 @bp.route("/settings/<section>", methods=["GET", "POST"])
 @login_required
 def page(section):
+    if section in OLD_PAGES:
+        if request.method == "GET":
+            return back(section)  # an old address: the tab it became
+        section = OLD_PAGES[section]
     if section not in PAGE_NAMES:
         abort(404)
     s = db.session()
     errors = {}
     if request.method == "POST":
         action = request.form.get("action")
-        if ACTION_PAGES.get(action, section) != section and action in ACTION_PAGES:
-            section = ACTION_PAGES[action]
+        if action in ACTION_PAGES and tab_of(ACTION_PAGES[action]) != section:
+            section = tab_of(ACTION_PAGES[action])
         if action == "name":
             not_for_demo("The demo can't change its account.")
             name = clean_name(request.form.get("user_name"))
@@ -107,7 +124,7 @@ def page(section):
                 g.user.name = name
                 s.commit()
                 flash("Your name has been changed.")
-                return back("account")
+                return back("general")
         elif action == "password":
             not_for_demo("The demo can't change its account.")
             if not check_password_hash(g.user.password_hash, request.form.get("current_password", "")):
@@ -121,7 +138,7 @@ def page(section):
                 session["session_version"] = g.user.session_version  # this device stays logged in
                 close_sockets(g.user.id)
                 flash("Your password has been changed. Your other devices are logged out.")
-                return back("account")
+                return back("general")
         elif action == "recovery":
             not_for_demo("The demo can't change its account.")
             if not check_password_hash(g.user.password_hash, request.form.get("recovery_password", "")):
@@ -149,7 +166,7 @@ def page(section):
     for extra in extras:
         more = dict(extra(s, g.user))
         data["settings_sections"] += [name for name in more.pop("settings_sections", [])
-                                      if SECTION_PAGES.get(name) == section]
+                                      if tab_of(SECTION_PAGES.get(name, "")) == section]
         data.update(more)
     # A fixed order, whichever part of the app added its section first.
     data["settings_sections"].sort(key=lambda name: SECTION_ORDER.index(name) if name in SECTION_ORDER else 99)
