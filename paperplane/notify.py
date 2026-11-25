@@ -131,9 +131,10 @@ def after_message(s, conversation, message, moment):
     app = s.info.get("app")
     hub = app.extensions.get("paperplane_hub") if app else None
     text = chats.preview_of(message) or "Sent a message"
+    from . import restrict
     for membership in chats.members(s, conversation):
         user_id = membership.user_id
-        if user_id == message.sender_id or is_muted(membership, moment):
+        if user_id == message.sender_id or is_muted(membership, moment) or restrict.has(s, user_id, message.sender_id):
             continue
         if conversation.is_dm:
             title = sender.name
@@ -239,6 +240,7 @@ def search(s, me, query, chat_id=None, limit=SEARCH_LIMIT):
                Message.deleted_at.is_(None), Message.kind == "text",
                # The history rule: a group that hides it shows a member only what came after they joined.
                or_(Conversation.history_visible.is_(True), Conversation.kind == "dm", Message.seq > Membership.joined_seq),
+               Message.seq > Membership.cleared_seq,  # a chat they deleted for themselves
                func.lower(Message.body).like(like_pattern(query.lower()), escape="\\"))
         .order_by(Message.created_at.desc(), Message.id.desc()).limit(limit))
     if chat_id:

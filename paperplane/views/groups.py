@@ -3,7 +3,7 @@ button; both show the chat's Photos, Files and Links, with their own page), its 
 comes back to the info page; the changes go out live through the outbox (groups.py)."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from .. import access, blocks, chats, db, groups, media
+from .. import access, blocks, chats, db, groups, media, restrict
 from ..auth import login_required, safe_next
 from ..dates import utcnow
 from ..models import User
@@ -204,6 +204,28 @@ def join(code):
 
 # ---------- Blocking ----------
 
+@bp.post("/people/<int:user_id>/restrict")
+@login_required
+def restrict_person(user_id):
+    s = db.session()
+    other = s.get(User, user_id)
+    restrict.restrict(s, g.user, other)
+    s.commit()
+    flash(f"You restricted {other.name}. No notifications from them, and you won't see each other online. They aren't told.")
+    return redirect(safe_next(request.form.get("next"), url_for("chats.index")))
+
+
+@bp.post("/people/<int:user_id>/unrestrict")
+@login_required
+def unrestrict_person(user_id):
+    s = db.session()
+    other = s.get(User, user_id)
+    restrict.unrestrict(s, g.user, other)
+    s.commit()
+    flash(f"{other.name if other else 'They'} isn't restricted any more.")
+    return redirect(safe_next(request.form.get("next"), url_for("chats.index")))
+
+
 @bp.post("/people/<int:user_id>/block")
 @login_required
 def block(user_id):
@@ -229,11 +251,15 @@ def unblock(user_id):
 
 
 def blocked_section(s, user):
-    return {"settings_sections": ["_settings_blocked.html"], "blocked_people": blocks.blocked_people(s, user)}
+    return {"settings_sections": ["_settings_restricted.html", "_settings_blocked.html"],
+            "blocked_people": blocks.blocked_people(s, user), "restricted_people": restrict.restricted_people(s, user)}
 
 
 def init_app(app):
     from . import settings
     if blocked_section not in settings.extras:
         settings.extras.append(blocked_section)
+    settings.SECTION_PAGES["_settings_restricted.html"] = "privacy"
+    if "_settings_restricted.html" not in settings.SECTION_ORDER:
+        settings.SECTION_ORDER.insert(settings.SECTION_ORDER.index("_settings_blocked.html"), "_settings_restricted.html")
     app.jinja_env.globals.update(MUTE_CHOICES=groups.MUTE_CHOICES)

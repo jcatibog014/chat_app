@@ -10,7 +10,7 @@ Lines are written where things happen (the same transaction, so they can't disag
 - story_reaction: stories.react;
 - group_added / group_admin / group_owner / group_removed: groups.py.
 
-Never about yourself, never between people who blocked each other (blocking also deletes the
+Never about yourself, never from someone you restricted, never between people who blocked each other (blocking also deletes the
 lines between them), and a deleted message takes its lines with it, so the number in the
 menu always matches what the page shows. Opening the page marks everything read. Each change
 sends "activity.count" {unread} to the person's tabs (activity.js updates the menu's number).
@@ -31,8 +31,9 @@ KEEP = timedelta(days=60)
 
 def add(s, user_id, kind, actor, moment, conversation_id=None, message_id=None, story_id=None, emoji=None):
     """A new line on user_id's page, unless it's about themselves or a block stands between."""
-    from . import blocks
-    if user_id is None or user_id == actor.id or blocks.between(s, user_id, actor.id):
+    from . import blocks, restrict
+    if (user_id is None or user_id == actor.id or blocks.between(s, user_id, actor.id)
+            or restrict.has(s, user_id, actor.id)):
         return None
     item = Activity(user_id=user_id, actor_id=actor.id, kind=kind, conversation_id=conversation_id,
                     message_id=message_id, story_id=story_id, emoji=emoji, created_at=moment)

@@ -89,8 +89,28 @@ def title_for(s, conversation, viewer_id):
 
 
 def visible_from(conversation, membership):
-    """The seq after which this member may read: all of it, unless the group hides earlier history."""
-    return 0 if conversation.history_visible or conversation.is_dm else membership.joined_seq
+    """The seq after which this member may read: all of it, unless the group hides earlier history,
+    or they deleted the chat for themselves (then only what came after, chats.clear_for_me)."""
+    history = 0 if conversation.history_visible or conversation.is_dm else membership.joined_seq
+    return max(history, membership.cleared_seq or 0)
+
+
+def is_cleared(conversation, membership):
+    """Deleted for this member, and nothing new since: it stays out of their list."""
+    return bool(membership.cleared_seq) and membership.cleared_seq >= conversation.last_seq
+
+
+def clear_for_me(s, me, conversation_id):
+    """Delete a chat FOR ME: its messages so far are gone for me (not for anyone else), and it
+    leaves my list until someone sends something new. I stay a member of a group."""
+    conversation, membership = access.load(s, me, conversation_id)
+    membership.cleared_seq = conversation.last_seq
+    membership.last_read_seq = max(membership.last_read_seq, conversation.last_seq)
+    s.flush()
+    # My other tabs drop it from their lists; the menu's number may change.
+    outbox.emit(s, {me.id}, "conversation.removed", {"conversation_id": conversation.id, "why": "cleared"})
+    outbox.emit(s, {me.id}, "unread.total", {"total": total_unread(s, me)})
+    return conversation
 
 
 def bump(s, conversation, moment, new_message=False):
@@ -382,6 +402,8 @@ class ChatRow:
     other: User | None       # the other person, in a DM
     last: Message | None
     unread: int
+    restricted: bool = False  # the other person, in a DM, is one I restricted (restrict.py)
+    blocked: bool = False     # ... or blocked
 
     @property
     def when(self):
@@ -397,8 +419,11 @@ def chat_row(s, viewer, conversation, membership=None):
         last = s.scalar(select(Message).where(Message.conversation_id == conversation.id,
                                               Message.seq == conversation.last_seq))
     other = other_person(s, conversation, viewer.id) if conversation.is_dm else None
+    from . import blocks, restrict
     row = ChatRow(conversation, membership, conversation.title if conversation.is_group else (other.name if other else "Direct message"),
-                  other, last, unread_count(conversation, membership))
+                  other, last, unread_count(conversation, membership),
+                  restricted=bool(other and restrict.has(s, viewer.id, other.id)),
+                  blocked=bool(other and blocks.i_blocked(s, viewer.id, other.id)))
     from . import notify
     return notify.mention_counts(s, viewer, [row])[0]
 
@@ -425,12 +450,18 @@ def chat_list(s, viewer):
                 select(Membership.conversation_id, User).join(User, User.id == Membership.user_id)
                 .where(Membership.conversation_id.in_(dm_ids), Membership.user_id != viewer.id)):
             others[conversation_id] = user
+    from . import blocks, restrict
+    restricted = restrict.restricted_ids(s, viewer.id)
+    blocked = {person.id for person in blocks.blocked_people(s, viewer)}
     result = []
     for conversation, membership in rows:
+        if is_cleared(conversation, membership):
+            continue  # deleted for me, nothing new since
         other = others.get(conversation.id)
         title = conversation.title if conversation.is_group else (other.name if other else "Direct message")
         result.append(ChatRow(conversation, membership, title, other, last_messages.get(conversation.id),
-                              unread_count(conversation, membership)))
+                              unread_count(conversation, membership),
+                              restricted=bool(other and other.id in restricted), blocked=bool(other and other.id in blocked)))
     from . import notify
     return notify.mention_counts(s, viewer, result)
 
@@ -441,9 +472,10 @@ def total_unread(s, viewer, rows=None):
 
 
 def counts_in_total(row):
-    """A muted chat keeps its own (grey) badge but stays out of the menu's number."""
+    """A muted chat, or one with someone I restricted, keeps its own (grey) badge but stays out
+    of the menu's number."""
     from . import notify
-    return not notify.is_muted(row.membership)
+    return not notify.is_muted(row.membership) and not row.restricted
 
 
 def messages_page(s, conversation, membership, before_seq=None, limit=PAGE_SIZE):

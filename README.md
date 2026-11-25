@@ -29,6 +29,7 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Photos, Files and Links | Every chat keeps a history of the pictures, files and links sent in it, newest first, one tab each. |
 | Find | Search the words in all your chats, or in one chat (and choose who said them). |
 | Mentions | Write @name in a group. That person gets a red @ and a notification. |
+| Chat list menu | Beside each chat: mute, mark as read, restrict, block, leave, or delete the chat (only for you). On a phone, press and hold a chat to preview it. |
 | Notifications | One page for what concerns you: mentions, replies and reactions to your messages, new stories, reactions and replies to yours, and being added to a group or made an admin. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
 | Colours | Pink (like the logo) is the default. You can choose purple, red or blue, and light or dark. |
@@ -95,6 +96,17 @@ Each time you post, you choose who can see it: **everyone you chat with**, or on
 | ![Making a text card](docs/screenshots/story-new.png) | ![Carlo's reply to Mika's story](docs/screenshots/story-reply.png) |
 
 Only people you chat with can see your stories, and someone you block can't see them at all. Only you can see who saw your story. If you don't want to see someone's stories, open one and choose **More**, then **Mute**. They aren't told.
+
+### The Chat List Menu
+
+Point at a chat in the list and a **⋯** shows beside its time: **Mute**, **Mark as read**, **Restrict**, **Block** (or **Leave group**), and **Delete chat**. On a phone there's no ⋯: **press and hold** a chat to see its latest messages without opening it (it stays unread), with the same choices underneath.
+
+| On a computer | On a phone (press and hold) |
+| --- | --- |
+| ![The chat list menu](docs/screenshots/chat-menu.png) | ![The preview and its choices](docs/screenshots/phone-peek.png) |
+
+- **Delete chat** deletes it only for you. Nobody else loses anything, and the chat comes back if someone sends a new message (with only the new messages).
+- **Restrict** is quieter than blocking. They can still message you, but you get no notifications from them, their chat stays out of your unread number, and you don't see each other online. They aren't told. Undo it from the same menu, or in Settings > Privacy > Restricted People.
 
 ### Notifications
 

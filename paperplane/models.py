@@ -156,6 +156,9 @@ class Membership(Base):
     # THEY muted the chat (stage 9): no notifications and a grey badge until then. Not the same
     # as muted_until above, which an admin sets to stop someone talking.
     notify_off_until: Mapped[datetime | None] = mapped_column(DateTime)
+    # They deleted the chat FOR THEMSELVES (PR #10): messages up to this seq are gone for them,
+    # and the chat leaves their list until a newer message arrives (chats.clear_for_me).
+    cleared_seq: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     conversation: Mapped[Conversation] = relationship(back_populates="memberships")
     user: Mapped[User] = relationship()
@@ -354,6 +357,18 @@ class StoryMute(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     muted_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+
+
+class Restriction(Base):
+    """restrictor restricted someone (restrict.py): no notifications from them, their chat stays
+    out of the unread number, and neither sees the other online. They aren't told."""
+    __tablename__ = "restrictions"
+    __table_args__ = (UniqueConstraint("restrictor_id", "restricted_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    restrictor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    restricted_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Activity(Base):

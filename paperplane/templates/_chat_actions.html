@@ -1,0 +1,47 @@
+{% from "_macros.html" import csrf %}
+{% from "_icons.html" import icon %}
+{# What you can do with a chat from the chat list: the ⋯ menu beside the time (computer) and the
+   card under the long-press preview (phone, _chat_peek.html). Every choice is a small POST form,
+   so it works without JavaScript; chatmenu.js fills "next" with the page you're on. page=False:
+   a row drawn for someone else's tab (conversation.new) carries no CSRF token (it would be the
+   wrong person's); chatmenu.js adds the reader's own when a form is sent. #}
+{% macro chat_actions(row, layout='menu', page=True) %}
+  {% set c = row.conversation %}
+  {% set other = row.other %}
+  {% set muted = chat_is_muted(row.membership) %}
+  {% set back = url_for('chats.index') %}
+  {% set item = 'menu-item' if layout == 'menu' else 'peek-action' %}
+  {% macro action(endpoint, args, label, symbol, danger=False, confirm=None, fields={}) %}
+    <form method="post" action="{{ url_for(endpoint, **args) }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>
+      {% if page %}{{ csrf() }}{% endif %}<input type="hidden" name="next" value="{{ back }}" data-next>
+      {% for name, value in fields.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <button class="{{ item }}{% if danger %} is-danger{% endif %}" type="submit">{{ icon(symbol, 18 if layout == 'card' else 16) }}<span>{{ label }}</span></button>
+    </form>
+  {% endmacro %}
+  {% if muted %}
+    {{ action('search.mute_chat', {'chat_id': c.id}, 'Unmute', 'bell', fields={'choice': 'off'}) }}
+  {% else %}
+    {{ action('search.mute_chat', {'chat_id': c.id}, 'Mute', 'bell-off', fields={'choice': 'forever'}) }}
+  {% endif %}
+  {% if row.unread %}
+    {{ action('chats.read_all', {'chat_id': c.id}, 'Mark as read', 'checks') }}
+  {% endif %}
+  {% if other %}
+    {% if row.restricted %}
+      {{ action('groups.unrestrict_person', {'user_id': other.id}, 'Unrestrict', 'shield') }}
+    {% else %}
+      {{ action('groups.restrict_person', {'user_id': other.id}, 'Restrict', 'shield',
+                confirm='Restrict ' ~ other.name ~ '? No notifications from them, and you won\'t see each other online. They aren\'t told.') }}
+    {% endif %}
+    {% if row.blocked %}
+      {{ action('groups.unblock', {'user_id': other.id}, 'Unblock', 'block') }}
+    {% else %}
+      {{ action('groups.block', {'user_id': other.id}, 'Block', 'block', danger=True,
+                confirm='Block ' ~ other.name ~ '? Neither of you will be able to message the other.') }}
+    {% endif %}
+  {% else %}
+    {{ action('groups.leave', {'chat_id': c.id}, 'Leave group', 'leave', danger=True, confirm='Leave ' ~ row.title ~ '?') }}
+  {% endif %}
+  {{ action('chats.clear', {'chat_id': c.id}, 'Delete chat', 'trash', danger=True,
+            confirm='Delete ' ~ ('your chat with ' ~ row.title if other else row.title) ~ '? It\'s deleted only for you, and comes back if someone sends a new message.') }}
+{% endmacro %}

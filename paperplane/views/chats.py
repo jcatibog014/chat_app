@@ -7,7 +7,7 @@ over the WebSocket instead, and these pages are only loaded once.
 from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
 
 from .. import access, chats, db, files, tools
-from ..auth import login_required
+from ..auth import login_required, safe_next
 from ..dates import utcnow
 from ..models import User
 from ..problems import Forbidden, Invalid, NotFound, Problem, TooMany
@@ -116,6 +116,43 @@ def send(chat_id):
     if wants_json:
         return jsonify(message=chats.message_data(message), duplicate=duplicate)
     return redirect(url_for("chats.show", chat_id=chat_id, _anchor="latest"))
+
+
+@bp.post("/chats/<int:chat_id>/clear")
+@login_required
+def clear(chat_id):
+    """Delete chat (from the chat list's menu): gone for me only, back when someone writes."""
+    s = db.session()
+    conversation = chats.clear_for_me(s, g.user, chat_id)
+    title = chats.title_for(s, conversation, g.user.id)
+    s.commit()
+    flash(f"Your chat with {title} is deleted. It comes back if someone sends a new message."
+          if conversation.is_dm else f"{title} is deleted from your chats. It comes back when someone writes.")
+    target = safe_next(request.form.get("next"), url_for("chats.index"))
+    # Never land back on the chat just deleted.
+    return redirect(url_for("chats.index") if target.split("?")[0].rstrip("/") == f"/chats/{chat_id}" else target)
+
+
+@bp.post("/chats/<int:chat_id>/read")
+@login_required
+def read_all(chat_id):
+    s = db.session()
+    chats.mark_read(s, g.user, chat_id)
+    s.commit()
+    return redirect(safe_next(request.form.get("next"), url_for("chats.index")))
+
+
+@bp.get("/chats/<int:chat_id>/peek")
+@login_required
+def peek(chat_id):
+    """The phone's long-press preview: the latest messages and the actions card. Looking doesn't
+    read the chat (no "Seen", the badge stays). An HTML piece for chatmenu.js."""
+    s = db.session()
+    conversation, membership = access.load(s, g.user, chat_id)
+    messages, _more = chats.messages_page(s, conversation, membership, limit=8)
+    tools.prepare(s, messages)
+    row = chats.chat_row(s, g.user, conversation, membership)
+    return render_template("_chat_peek.html", row=row, messages=messages)
 
 
 @bp.get("/chats/new")

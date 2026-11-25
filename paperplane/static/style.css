@@ -763,6 +763,62 @@ details.fold[open] { flex: 1 1 100%; }
 .result-who { color: var(--ink); font-weight: 600; }
 .result-body mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); border-radius: 3px; padding: 0 .1rem; }
 
+/* ---------- The chat list's choices: ⋯ beside the time (computers), long press (phones) ---------- */
+.chat-row { position: relative; }
+.row-menu { position: absolute; top: .5rem; right: .35rem; z-index: 2; }
+.row-menu > summary { list-style: none; color: var(--muted); }
+.row-menu > summary::-webkit-details-marker { display: none; }
+.row-menu-items { min-width: 13rem; }
+.row-menu-items form { margin: 0; }
+.menu-item.is-danger, .menu-item.is-danger svg { color: var(--danger); }
+.menu-item svg { flex: 0 0 auto; color: var(--muted); }
+@media (min-width: 56.01rem) {
+  .chat-row > a { padding-right: 2.6rem; }
+  /* Quiet until you point at the row (or move to it with the keyboard); always there on touch. */
+  .row-menu > summary { opacity: 0; transition: opacity .12s; }
+  .chat-row:hover .row-menu > summary, .row-menu:focus-within > summary, .row-menu[open] > summary { opacity: 1; }
+}
+@media (min-width: 56.01rem) and (hover: none) { .row-menu > summary { opacity: 1; } }
+@media (max-width: 56rem) {
+  .row-menu { display: none; }
+  .chat-row > a { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+}
+
+/* The long-press preview: the chat's latest messages, then a card of choices. */
+body.has-peek { overflow: hidden; }
+.peek-layer { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: rgb(10 4 12 / .5); backdrop-filter: blur(6px); }
+.peek-loading { color: #ffffff; font-weight: 600; }
+.peek { width: min(100%, 26rem); display: grid; gap: .7rem; animation: peek-in .16s ease-out; }
+@keyframes peek-in { from { transform: scale(.96); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .peek { animation: none; } }
+.peek-chat { overflow: hidden; border-radius: var(--radius); background: var(--bg); box-shadow: 0 16px 40px rgb(0 0 0 / .3); }
+.peek-head { display: flex; align-items: center; gap: .65rem; padding: .7rem .8rem; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.peek-title { flex: 1 1 auto; min-width: 0; display: grid; line-height: 1.25; }
+.peek-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.peek-title small { color: var(--muted); }
+.peek-messages { list-style: none; margin: 0; padding: .7rem .8rem; display: grid; gap: .35rem; max-height: 42dvh; overflow-y: auto; }
+.peek-msg { display: grid; justify-items: start; gap: .1rem; }
+.peek-msg.is-mine { justify-items: end; }
+.peek-msg small { color: var(--muted); font-size: .72rem; padding-left: .3rem; }
+.peek-bubble { max-width: 85%; padding: .4rem .65rem; border-radius: 12px; background: var(--bubble-theirs); box-shadow: 0 1px 2px rgb(0 0 0 / .08);
+  font-size: .9rem; overflow-wrap: anywhere; }
+.peek-file { display: flex; align-items: center; gap: .3rem; color: var(--muted); }
+.peek-text { display: block; white-space: pre-line; }
+.peek:focus { outline: none; }
+.peek-msg.is-mine .peek-bubble { background: var(--bubble-mine); }
+.peek-bubble svg { vertical-align: -2px; color: var(--muted); }
+.peek-system { text-align: center; font-size: .78rem; color: var(--muted); }
+.peek-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.1rem, 1fr)); gap: .15rem; padding: .4rem; }
+.peek-actions form { margin: 0; }
+.peek-action { width: 100%; display: grid; justify-items: center; gap: .3rem; padding: .6rem .3rem; border: 0; border-radius: var(--radius-small);
+  background: none; color: var(--ink); font: 600 .8rem var(--font-body); cursor: pointer; }
+.peek-action svg { color: var(--link); }
+.peek-action:hover, .peek-action:focus-visible { background: var(--surface-soft); }
+.peek-action.is-danger, .peek-action.is-danger svg { color: var(--danger); }
+.peek-close { justify-self: center; display: inline-flex; align-items: center; gap: .35rem; min-height: 2.5rem; padding: 0 1.1rem;
+  border: 0; border-radius: 99px; background: rgb(255 255 255 / .92); color: #1a1220; font: 600 .9rem var(--font-body); cursor: pointer; }
+
 /* ---------- Notifications (activity.py): who did what that concerns you ---------- */
 .activity-section + .activity-section { margin-top: 1.6rem; }
 .activity-section h2 { margin-bottom: .7rem; font-size: 1.1rem; }
