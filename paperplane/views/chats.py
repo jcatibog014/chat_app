@@ -69,6 +69,7 @@ def show(chat_id):
         other=chats.other_person(s, conversation, g.user.id) if conversation.is_dm else None,
         client_id=chats.new_client_id(), replying=replying,
         find_query=" ".join(request.args.get("find", "").split())[:100] or None,
+        call_info=call_info(s, conversation),
         seen=tools.seen_words(conversation, readers, last, g.user.id),
         readers={str(user_id): {"name": name, "seq": seq} for user_id, (name, seq) in readers.items()},
         people=[{"handle": m.user.handle, "name": m.user.name} for m in members if m.user_id != g.user.id]
@@ -116,6 +117,15 @@ def send(chat_id):
     if wants_json:
         return jsonify(message=chats.message_data(message), duplicate=duplicate)
     return redirect(url_for("chats.show", chat_id=chat_id, _anchor="latest"))
+
+
+def call_info(s, conversation):
+    """A call going on in this chat (for its Join bar), if a tab is really in it."""
+    from .. import calls
+    call = calls.active_call(s, conversation.id)
+    if call is None or calls.stale(call):
+        return None
+    return {"id": call.id, "kind": call.kind, "count": len(calls.in_call_ids(s, call))}
 
 
 @bp.post("/chats/<int:chat_id>/clear")

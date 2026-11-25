@@ -29,6 +29,7 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Photos, Files and Links | Every chat keeps a history of the pictures, files and links sent in it, newest first, one tab each. |
 | Find | Search the words in all your chats, or in one chat (and choose who said them). |
 | Mentions | Write @name in a group. That person gets a red @ and a notification. |
+| Calls | Audio and video calls, one to one or in a group (up to 6 people). Missed calls show on your Notifications page. |
 | Chat list menu | Beside each chat: mute, mark as read, restrict, block, leave, or delete the chat (only for you). On a phone, press and hold a chat to preview it. |
 | Notifications | One page for what concerns you: mentions, replies and reactions to your messages, new stories, reactions and replies to yours, and being added to a group or made an admin. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
@@ -96,6 +97,18 @@ Each time you post, you choose who can see it: **everyone you chat with**, or on
 | ![Making a text card](docs/screenshots/story-new.png) | ![Carlo's reply to Mika's story](docs/screenshots/story-reply.png) |
 
 Only people you chat with can see your stories, and someone you block can't see them at all. Only you can see who saw your story. If you don't want to see someone's stories, open one and choose **More**, then **Mute**. They aren't told.
+
+### Calls
+
+The phone and camera buttons at the top of a chat start an **audio** or **video call**. In a group, everyone in the group is rung, and up to 6 people can be in the call. Whoever is called sees a card on any page, with **Answer** and **Decline**. During a call you can mute, turn the camera off, or make the call small to keep chatting, and a group chat shows a **Join** bar while a call is going on.
+
+| Someone is calling | A video call |
+| --- | --- |
+| ![An incoming video call](docs/screenshots/call-incoming.png) | ![A video call](docs/screenshots/video-call.png) |
+
+Each call leaves a line in the chat ("Video call · 4 min", or "Missed audio call"), and a missed call shows on the Notifications page. (The pictures use Edge's test camera.)
+
+**How it works.** The sound and pictures go straight from one browser to the other (WebRTC), not through the server. The server only rings people and passes each browser's connection details to the others over the same WebSocket as the chat. A group call connects everyone to everyone, so it stays small (6 people). Some networks (often phone networks) don't let two browsers reach each other directly; then a call needs a relay server (TURN), which you can add later in the settings (see docs/DEPLOY.md). In the demo the made-up teammates can't answer, so they decline and text back; a friend link lets a real person answer.
 
 ### The Chat List Menu
 

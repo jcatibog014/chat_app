@@ -357,6 +357,44 @@ def sample_activity(s, team, people, moment):
 
 fillers.append(sample_activity)
 
+
+# ---------- Calls: a video call with Ana yesterday, and a missed call from Carlo ----------
+
+def sample_calls(s, team, people, moment):
+    """Call history, the way calls.end leaves it: a line in the chat, and a missed-call line on
+    Mika's Notifications page. (Live calls need two real people: a friend link.)"""
+    from .models import Activity, Call, CallParticipant, Conversation
+    ana, carlo, mika = people["ana"], people["carlo"], people["mika"]
+
+    def dm_with(person):
+        return s.scalar(select(Conversation).where(Conversation.demo_team_id == team.id, Conversation.kind == "dm",
+                                                   Conversation.created_by_id == person.id))
+
+    def past_call(conversation, caller, kind, start, minutes, joined):
+        call = Call(conversation_id=conversation.id, started_by_id=caller.id, kind=kind, started_at=start,
+                    answered_at=start + timedelta(seconds=8) if minutes else None,
+                    ended_at=start + timedelta(minutes=minutes or 0.75))
+        s.add(call)
+        s.flush()
+        for person in joined:
+            s.add(CallParticipant(call_id=call.id, user_id=person.id, joined_at=start, left_at=call.ended_at))
+        seq, version = chats_bump(s, conversation, call.ended_at)
+        from .models import Message
+        words = f"{kind.title()} call · {minutes} min" if minutes else f"Missed {kind} call"
+        s.add(Message(conversation_id=conversation.id, seq=seq, kind="system", body=words,
+                      created_at=call.ended_at, version=version))
+        read_up_to(s, conversation, mika)
+        return call
+
+    past_call(dm_with(ana), mika, "video", ago(moment, days=1, hours=1, minutes=30), 6, [mika, ana])
+    missed = past_call(dm_with(carlo), carlo, "audio", ago(moment, minutes=40), None, [carlo])
+    s.add(Activity(user_id=mika.id, actor_id=carlo.id, kind="call_missed", conversation_id=missed.conversation_id,
+                   emoji="audio", created_at=missed.started_at))
+    s.flush()
+
+
+fillers.append(sample_calls)
+
 PALETTE_NOTES = """Kalye Coffee palette (Carlo)
 
 Harbour blue  #1D4E6B  cups, signs

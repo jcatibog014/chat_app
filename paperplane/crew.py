@@ -12,7 +12,10 @@ teammates through the REAL code paths, exactly like people would:
   say a few scripted lines on their own;
 - when the visitor posts a story, a teammate who may see it opens it a few
   seconds later and reacts (stories.mark_seen / stories.react), so Seen by
-  changes live.
+  changes live;
+- when the visitor calls a teammate (a DM), the teammate declines after a few
+  seconds (calls.decline) and texts back: made-up people have no microphone.
+  A friend link lets a real person answer instead.
 
 Nothing here touches the database or sockets in a special way: if the crew
 works, the app works.
@@ -33,7 +36,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
-from . import chats, db, outbox, stories
+from . import calls, chats, db, outbox, stories
 from .dates import utcnow
 from .hub import Connection
 from .models import Conversation, Membership, User
@@ -74,6 +77,8 @@ REPLIES = [
     (("?",),
      ["Good question. Let me check and get back to you.", "Hmm, I think so!", "Not sure yet. I'll ask Ana."]),
 ]
+CALL_REPLIES = ["Sorry, I can't talk right now. Can you text me instead?",
+                "In a meeting! I'll call you back later.", "Can't pick up right now. What's up?"]
 STORY_REACTIONS = ["\u2764\ufe0f", "\U0001f602", "\U0001f62e", "\U0001f44d"]
 FALLBACK = ["Nice!", "Got it.", "Haha, true.", "Sounds good to me.", "Okay, noted!", "I'll take a look later."]
 
@@ -108,6 +113,7 @@ class Job:
     chat_id: int | None = field(compare=False, default=None)
     words: str | None = field(compare=False, default=None)
     story_id: int | None = field(compare=False, default=None)
+    call_id: int | None = field(compare=False, default=None)
 
 
 class TeamPlay:
@@ -123,9 +129,9 @@ class TeamPlay:
         self.replying = set()    # chats with a reply on its way (one at a time per chat)
         self.order = 0
 
-    def add(self, due, action, who, chat_id=None, words=None, story_id=None):
+    def add(self, due, action, who, chat_id=None, words=None, story_id=None, call_id=None):
         self.order += 1
-        self.jobs.append(Job(due, self.order, action, who, chat_id, words, story_id))
+        self.jobs.append(Job(due, self.order, action, who, chat_id, words, story_id, call_id))
 
 
 class Crew:
@@ -139,6 +145,7 @@ class Crew:
         self.team_of = {}     # user id -> demo team id (or None): people don't change teams
         self.heard_queue = deque()
         self.posted_queue = deque()
+        self.call_queue = deque()
 
     # ---------- What happened ----------
 
@@ -187,6 +194,8 @@ class Crew:
                     self.plan_reply(s, *self.heard_queue.popleft(), now)
                 while self.posted_queue:
                     self.plan_look(s, *self.posted_queue.popleft(), now)
+                while self.call_queue:
+                    self.plan_decline(s, *self.call_queue.popleft(), now)
             finally:
                 s.close()
             for play in list(self.teams.values()):
@@ -254,6 +263,15 @@ class Crew:
         play.add(now + 4.0, "look", mate.id, story_id=story_id)
         play.add(now + 6.0, "react", mate.id, words=play.rng.choice(STORY_REACTIONS), story_id=story_id)
 
+    def plan_decline(self, s, team_id, call_id, chat_id, mate_id, now):
+        """A teammate can't answer a call (no microphone): decline, then text back."""
+        play = self.teams.get(team_id)
+        if play is None or self.has_real_tab(mate_id):
+            return
+        play.add(now + 4.0, "decline_call", mate_id, chat_id, call_id=call_id)
+        play.add(now + 5.5, "typing", mate_id, chat_id)
+        play.add(now + 7.5, "say", mate_id, chat_id, play.rng.choice(CALL_REPLIES))
+
     # ---------- Doing things, through the real code ----------
 
     def run(self, play, job):
@@ -275,6 +293,8 @@ class Crew:
                 self.with_session(lambda s: chats.mark_read(s, s.get(User, job.who), job.chat_id))
             elif job.action in ("say", "reply"):
                 self.with_session(lambda s: self.say(s, job.who, job.chat_id, job.words))
+            elif job.action == "decline_call":
+                self.with_session(lambda s: calls.decline(s, s.get(User, job.who), job.call_id, utcnow()))
             elif job.action == "look":
                 self.with_session(lambda s: self.look(s, job.who, job.story_id))
             elif job.action == "react":
@@ -361,6 +381,23 @@ def story_posted(s, story, moment):
         crew.posted(owner.demo_team_id, story.id, stories.audience_of(s, story))
 
 
+def call_started(s, call, moment):
+    """calls.after_start_hooks: a real person in a demo called a teammate (a DM)."""
+    if s.info.get("crew"):
+        return
+    caller = s.get(User, call.started_by_id)
+    conversation = s.get(Conversation, call.conversation_id)
+    if caller is None or caller.demo_team_id is None or caller.is_bot or not conversation.is_dm:
+        return
+    other = chats.other_person(s, conversation, caller.id)
+    if other is None or not other.is_bot:
+        return
+    app = s.info.get("app")
+    crew = app.extensions.get(KEY) if app else None
+    if crew is not None:
+        crew.call_queue.append((caller.demo_team_id, call.id, conversation.id, other.id))
+
+
 def get(app):
     return app.extensions[KEY]
 
@@ -373,5 +410,7 @@ def init_app(app):
         chats.after_send_hooks.append(notice)
     if story_posted not in stories.after_post_hooks:
         stories.after_post_hooks.append(story_posted)
+    if call_started not in calls.after_start_hooks:
+        calls.after_start_hooks.append(call_started)
     if app.config.get("RUN_CREW"):
         crew.start_thread()

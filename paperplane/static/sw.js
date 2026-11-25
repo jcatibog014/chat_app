@@ -5,7 +5,7 @@
 // a small "You're offline" page shows instead.
 "use strict";
 
-const CACHE = "paperplane-v10"; // change the number when these files change (v10: the chat list menu)
+const CACHE = "paperplane-v11"; // change the number when these files change (v11: calls)
 const FILES = [
   "/static/style.css",
   "/static/app.js",
@@ -16,6 +16,7 @@ const FILES = [
   "/static/find.js",
   "/static/activity.js",
   "/static/chatmenu.js",
+  "/static/call.js",
   "/static/fonts/inter-latin-400-normal.woff2",
   "/static/fonts/outfit-latin-700-normal.woff2",
   "/static/icons/icon-192.png",

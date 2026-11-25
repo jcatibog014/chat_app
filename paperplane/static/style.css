@@ -763,6 +763,70 @@ details.fold[open] { flex: 1 1 100%; }
 .result-who { color: var(--ink); font-weight: 600; }
 .result-body mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); border-radius: 3px; padding: 0 .1rem; }
 
+/* ---------- Calls (call.js): the call screen, the incoming call, the Join bar ---------- */
+.call-banner { display: flex; align-items: center; gap: .6rem; padding: .45rem clamp(.75rem, 2.5vw, 2rem);
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border-bottom: 1px solid var(--rule); font-size: .9rem; color: var(--ink); }
+.call-banner[hidden] { display: none; }
+.call-banner > svg { color: var(--ok); flex: 0 0 auto; }
+.call-banner > span { flex: 1 1 auto; min-width: 0; }
+body.in-call { overflow: hidden; }
+.call-screen { position: fixed; inset: 0; z-index: 120; display: grid; grid-template-rows: auto 1fr auto; gap: .8rem;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: #120a14; color: #ffffff; }
+.call-top { display: flex; align-items: center; gap: .75rem; }
+.call-heading { flex: 1 1 auto; min-width: 0; display: grid; line-height: 1.3; }
+.call-heading strong { font: 700 1.15rem var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call-status { color: rgb(255 255 255 / .75); font-variant-numeric: tabular-nums; font-size: .9rem; }
+.call-tiles { position: relative; min-height: 0; display: grid; gap: .6rem; grid-template-columns: 1fr; grid-auto-rows: minmax(0, 1fr); }
+/* Two people: they fill the screen, and you are a small window in the corner. */
+.call-tiles[data-count="2"] .call-tile.is-me { position: absolute; z-index: 2; right: .75rem; bottom: .75rem; width: clamp(6.5rem, 22%, 13rem);
+  height: auto; aspect-ratio: 3 / 4; box-shadow: 0 8px 24px rgb(0 0 0 / .45); border: 2px solid rgb(255 255 255 / .25); }
+.call-tiles[data-count="2"] .call-tile.is-me .call-face { width: 3rem; height: 3rem; font-size: 1.3rem; }
+.call-tiles[data-count="3"], .call-tiles[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.call-tiles[data-count="5"], .call-tiles[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 40rem) { .call-tiles[data-count="5"], .call-tiles[data-count="6"] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.call-tile { position: relative; min-height: 0; overflow: hidden; display: grid; place-items: center; border-radius: 16px; background: #2a1a2e; }
+.call-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+.call-tile.is-me video { transform: scaleX(-1); }  /* a mirror, like every video call */
+.call-tile.has-video:not(.is-camera-off) video { opacity: 1; }
+.call-face { width: clamp(4rem, 14vmin, 7rem); height: clamp(4rem, 14vmin, 7rem); font-size: clamp(1.6rem, 6vmin, 3rem); }
+.call-name { position: absolute; left: .6rem; bottom: .55rem; padding: .2rem .55rem; border-radius: 99px; background: rgb(0 0 0 / .45); font-size: .85rem; font-weight: 600; }
+.call-muted { position: absolute; right: .6rem; bottom: .55rem; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: rgb(0 0 0 / .45); }
+.call-muted svg { width: 16px; height: 16px; }
+.call-tile.is-failed::after { content: "Couldn't connect"; position: absolute; top: .6rem; left: .6rem; padding: .2rem .55rem; border-radius: 99px; background: var(--danger); font-size: .8rem; }
+.call-controls { display: flex; justify-content: center; gap: 1rem; }
+.call-round { display: inline-grid; place-items: center; width: 3.5rem; height: 3.5rem; border: 0; border-radius: 50%; background: rgb(255 255 255 / .16);
+  color: #ffffff; cursor: pointer; }
+.call-round:hover { background: rgb(255 255 255 / .26); }
+.call-round.is-off { background: #ffffff; color: #120a14; }
+.call-round.call-end { background: #d92d20; }
+.call-round.call-end:hover { background: #b42318; }
+.call-round.call-answer { background: #12a150; }
+.call-round.call-answer:hover { background: #0e8a44; }
+.call-round.call-small { width: 2.6rem; height: 2.6rem; }
+.call-round[hidden] { display: none; }
+/* Minimised: a small window in the corner, so the chat can be used during the call. */
+.call-screen.is-small { inset: auto 1rem calc(6rem + env(safe-area-inset-bottom, 0px)) auto; width: min(18rem, calc(100vw - 2rem)); height: auto;
+  grid-template-rows: auto auto auto; padding: .7rem; border-radius: 18px; box-shadow: 0 16px 40px rgb(0 0 0 / .35); cursor: pointer; }
+@media (max-width: 56rem) { .call-screen.is-small { bottom: calc(var(--bottom-nav, 4rem) + 5rem); } }
+.call-screen.is-small .call-tiles { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 4.2rem; }
+.call-screen.is-small .call-tiles .call-tile.is-me { position: relative; inset: auto; width: auto; aspect-ratio: auto; box-shadow: none; border: 0; }
+.call-screen.is-small .call-name, .call-screen.is-small .call-muted { display: none; }
+.call-screen.is-small .call-face { width: 2.4rem; height: 2.4rem; font-size: 1.1rem; }
+.call-screen.is-small .call-round { width: 2.6rem; height: 2.6rem; }
+body.in-call:has(.call-screen.is-small) { overflow: auto; }
+/* Someone is calling: a card at the top, on any page. */
+.call-incoming { position: fixed; z-index: 130; top: 1rem; left: 50%; transform: translateX(-50%); width: min(26rem, calc(100vw - 2rem));
+  display: grid; gap: .9rem; padding: 1rem; border-radius: 18px; background: #1e1222; color: #ffffff; box-shadow: 0 18px 44px rgb(0 0 0 / .4);
+  animation: call-in .2s ease-out; }
+@keyframes call-in { from { transform: translate(-50%, -1rem); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .call-incoming { animation: none; } }
+.call-incoming-who { display: flex; align-items: center; gap: .8rem; }
+.call-incoming-words { display: grid; line-height: 1.3; min-width: 0; }
+.call-incoming-words strong { font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call-incoming-words span { color: rgb(255 255 255 / .75); font-size: .9rem; }
+.call-incoming-buttons { display: flex; justify-content: space-around; }
+.call-incoming-buttons .call-round { width: auto; height: auto; padding: .7rem 1.3rem; border-radius: 99px; display: inline-flex; gap: .45rem; font-weight: 700; }
+
 /* ---------- The chat list's choices: ⋯ beside the time (computers), long press (phones) ---------- */
 .chat-row { position: relative; }
 .row-menu { position: absolute; top: .5rem; right: .35rem; z-index: 2; }
@@ -832,6 +896,7 @@ a.activity-row:hover { background: var(--row-hover); color: var(--ink); }
   border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .72rem; line-height: 1; box-shadow: 0 0 0 2px var(--surface); }
 .activity-kind.has-emoji { background: var(--surface); font-size: .8rem; }
 .activity-group { background: var(--link); }
+.activity-call { background: var(--danger); }
 .activity-text { flex: 1 1 auto; min-width: 0; display: grid; gap: .15rem; line-height: 1.4; }
 .activity-words { overflow-wrap: anywhere; }
 .activity-snippet { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }

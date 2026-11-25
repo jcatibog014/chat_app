@@ -51,6 +51,14 @@ It prints two lines: `VAPID_PUBLIC_KEY=...` and `VAPID_PRIVATE_KEY=...`.
 3. Add `VAPID_SUBJECT` with `mailto:` and your email, like `mailto:you@example.com`.
 4. Save. In the app, open **Settings** and click **Turn on notifications**.
 
+## Part 5 (Optional): Calls on Every Network
+
+Calls work without any setup: the browsers find each other with a free STUN server (Google's). On some networks, often phone data, two browsers can't reach each other directly, and the call says **Couldn't connect**. A TURN server relays those calls. It isn't free to run, but some services have a small free plan (for example Metered, or Cloudflare Calls).
+
+1. Make an account with a TURN service and copy its address, username and password.
+2. In Render, open **Environment** and add `TURN_URL` (like `turn:relay.example.com:3478`), `TURN_USERNAME` and `TURN_CREDENTIAL`.
+3. Save. New calls use it at once.
+
 ## Run the Tests on Neon (Recommended Once)
 
 The tests normally use SQLite. Run them once on PostgreSQL too:
