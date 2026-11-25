@@ -68,6 +68,7 @@ def show(chat_id):
         members=members, title=chats.title_for(s, conversation, g.user.id),
         other=chats.other_person(s, conversation, g.user.id) if conversation.is_dm else None,
         client_id=chats.new_client_id(), replying=replying,
+        find_query=" ".join(request.args.get("find", "").split())[:100] or None,
         seen=tools.seen_words(conversation, readers, last, g.user.id),
         readers={str(user_id): {"name": name, "seq": seq} for user_id, (name, seq) in readers.items()},
         people=[{"handle": m.user.handle, "name": m.user.name} for m in members if m.user_id != g.user.id]

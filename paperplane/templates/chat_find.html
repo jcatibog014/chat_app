@@ -1,0 +1,70 @@
+{% extends "_chat_panel.html" %}
+{% from "_macros.html" import avatar, empty %}
+{% from "_icons.html" import icon %}
+{# Search in this chat: words, and/or who said them (notify.search_chat). A plain GET form, so it
+   works without JavaScript; chat.js updates the results as you type. Each result opens the chat
+   at that message, with the words marked and a way back to these results. #}
+{% set panel_title = 'Search in ' ~ title %}
+{% set close_url = url_for('chats.show', chat_id=conversation.id) %}
+{% set close_label = 'Back to the chat' %}
+{% block title %}Search in {{ title }} - {{ APP_NAME }}{% endblock %}
+{% block panel %}
+  <form class="search-row" method="get" action="{{ url_for('search.in_chat', chat_id=conversation.id) }}" role="search" data-find-form>
+    <label class="search-box">
+      <span class="visually-hidden">Search in {{ title }}</span>
+      {{ icon('search', 18) }}
+      <input type="search" name="q" value="{{ query }}" placeholder="Search in this chat" maxlength="100" autocomplete="off" autofocus>
+    </label>
+    <label class="field search-chat">
+      <span class="visually-hidden">Said by</span>
+      <select name="from">
+        <option value="">From anyone</option>
+        {% for user_id, name in choices %}<option value="{{ user_id }}"{% if user_id == sender_id %} selected{% endif %}>From {{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="button" type="submit">Search</button>
+  </form>
+
+  <div data-find-results>
+  {% set who_words = ('you' if sender_id == g.user.id else sender.first_name) if sender else None %}
+  {% if not query and not sender %}
+    {{ empty('Search This Chat', 'Find words in ' ~ title ~ ', or choose a person to see what they said. Only you see what you search for.') }}
+  {% elif too_short %}
+    {{ empty('Type a Little More', 'Search for at least 2 letters.') }}
+  {% elif not results %}
+    {% if query %}
+      {{ empty('No Messages Found', 'Nothing ' ~ ('from ' ~ who_words ~ ' ' if who_words else '') ~ 'in this chat has "' ~ query ~ '". Try other words.') }}
+    {% else %}
+      {{ empty('No Messages Found', ('You haven\'t' if sender_id == g.user.id else sender.first_name ~ ' hasn\'t') ~ ' said anything here yet.') }}
+    {% endif %}
+  {% else %}
+    <p class="muted result-count">
+      {{ results|length }}{% if more %}+{% endif %} message{{ 's' if results|length != 1 or more }}
+      {%- if query %} with "{{ query }}"{% endif %}{% if who_words %} from {{ who_words }}{% endif %}{% if before %}, older ones{% endif %}
+    </p>
+    <ul class="results">
+      {% for message in results %}
+        {% set args = {'before': message.seq + 20, 'find': query} if query else {'before': message.seq + 20} %}
+        <li>
+          <a class="result" href="{{ url_for('chats.show', chat_id=conversation.id, **args) }}#m-{{ message.id }}">
+            {{ avatar(message.sender, 'small') }}
+            <span class="result-text">
+              <span class="result-top">
+                <strong>{{ 'You' if message.sender_id == g.user.id else (message.sender.name if message.sender else 'Someone') }}</strong>
+                <time datetime="{{ message.created_at|iso }}">{{ message.created_at|day_label }}, {{ message.created_at|clock }}</time>
+              </span>
+              <span class="result-body">{% if query %}{{ snippet(message.body, query) }}{% else %}{{ message.body|truncate(160, True, '...') }}{% endif %}</span>
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if more %}
+      {% set older = {'before': results[-1].seq} %}
+      {% if query %}{% set _ = older.update({'q': query}) %}{% endif %}
+      {% if sender_id %}{% set _ = older.update({'from': sender_id}) %}{% endif %}
+      <p class="media-more"><a class="button button-quiet" href="{{ url_for('search.in_chat', chat_id=conversation.id, **older) }}">Show older results</a></p>
+    {% endif %}
+  {% endif %}
+  </div>
+{% endblock %}

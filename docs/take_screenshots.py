@@ -140,6 +140,18 @@ def main():
         page.goto(page.url.split("#")[0].split("?")[0] + "/media?tab=links")
         shot(page, "media-links")
 
+        # Search in this chat: results as you type, then one opened in the chat.
+        open_chat(page, "Papel Studio")
+        page.click("a[title='Search in this chat']")
+        page.wait_for_selector("[data-find-form]")
+        page.locator("input[name=q]").press_sequentially("print", delay=60)
+        time.sleep(1.2)
+        shot(page, "chat-search")
+        page.locator(".result").first.click()
+        page.wait_for_selector("[data-find-bar]")
+        time.sleep(1)
+        shot(page, "chat-search-found")
+
         page.goto(BASE + "/chats/new")
         shot(page, "new-chat")
         page.goto(BASE + "/search?q=mockups")

@@ -27,7 +27,7 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Pictures and files | Send pictures and files (up to 5 MB). Pictures lose their hidden details (like where a photo was taken). |
 | Link previews | A web address in a message gets a small card with the page's title. |
 | Photos, Files and Links | Every chat keeps a history of the pictures, files and links sent in it, newest first, one tab each. |
-| Find | Search the words in all your chats. |
+| Find | Search the words in all your chats, or in one chat (and choose who said them). |
 | Mentions | Write @name in a group. That person gets a red @ and a notification. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
 | Colours | Pink (like the logo) is the default. You can choose purple, red or blue, and light or dark. |
@@ -94,6 +94,14 @@ Each time you post, you choose who can see it: **everyone you chat with**, or on
 | ![Making a text card](docs/screenshots/story-new.png) | ![Carlo's reply to Mika's story](docs/screenshots/story-reply.png) |
 
 Only people you chat with can see your stories, and someone you block can't see them at all. Only you can see who saw your story. If you don't want to see someone's stories, open one and choose **More**, then **Mute**. They aren't told.
+
+### Search in a Chat
+
+The magnifying glass at the top of a chat searches only that chat. Results show as you type, newest first. Choose a person to see only what they said (or, with no words, everything they said). Click a result: the chat opens at that message, with your words marked, and **Back to results** takes you back.
+
+| Searching Papel Studio | A result, opened in the chat |
+| --- | --- |
+| ![Search in Papel Studio](docs/screenshots/chat-search.png) | ![The message, with the words marked](docs/screenshots/chat-search-found.png) |
 
 ### Photos, Files and Links
 

@@ -625,6 +625,15 @@ details.fold[open] { flex: 1 1 100%; }
 .reply-quote strong { font-size: .78rem; color: var(--link); }
 .reply-quote span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .msg.is-flash .bubble { box-shadow: 0 0 0 3px var(--focus); transition: box-shadow .3s ease; }
+/* Search in this chat: the message a result opened (outlined even without JavaScript), its words
+   marked, and a bar back to the results. */
+.msg:target .bubble { box-shadow: 0 0 0 3px var(--focus); }
+.find-mark { background: color-mix(in srgb, var(--accent) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 .1rem; }
+.find-bar { display: flex; align-items: center; gap: .6rem; padding: .45rem clamp(.75rem, 2.5vw, 2rem); border-bottom: 1px solid var(--rule);
+  background: var(--accent-soft); font-size: .9rem; color: var(--ink); }
+.find-bar > svg { color: var(--link); flex: 0 0 auto; }
+.find-bar > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.find-bar a:not(.icon-button) { font-weight: 600; white-space: nowrap; }
 .reply-banner { display: flex; align-items: center; gap: .55rem; margin-bottom: .4rem; padding: .4rem .5rem .4rem .8rem; border-left: 3px solid var(--accent); border-radius: var(--radius-small); background: var(--surface); font-size: .88rem; color: var(--muted); }
 .reply-banner > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reply-banner strong { color: var(--ink); }
