@@ -112,6 +112,8 @@ def demo_pages(app, client):
              "/demo/friends": ["Invite a Friend", "Ana Reyes", "/demo/join/"],
              "/search": ["Search Your Messages"],
              "/search?q=mockups": ["<mark>mockups</mark>", "Papel Studio"]}
+    studio = next(chat for chat in chats if chat.title == "Papel Studio")
+    pages[f"/chats/{studio.id}/find?q=mockups"] = ["<mark>mockups</mark>", "Back to the chat"]
     for person in people_with_stories(app, mika):
         pages[f"/stories/{person}"] = ["story-face"]
     for chat in chats:
@@ -129,6 +131,7 @@ def demo_pages(app, client):
                          "ana": "kalye-logo-final", "ben": "batulao-trail-map", "carlo": "kalye-palette-notes.txt"}
         key = chat.title or creator_handle(app, chat)
         pages[f"/chats/{chat.id}/media"] = ["Photos, Files and Links", media_samples[key]]
+        pages[f"/chats/{chat.id}/find"] = ["Search in", "Search This Chat", "From You"]
         if chat.title == "Launch Plans":  # Mika's own group: every control, an admin and a working invite link
             pages[f"/chats/{chat.id}/info"] += ["Add People", "Invite Links", "2 of 10 used", "Admin", "Delete the Group"]
     return pages

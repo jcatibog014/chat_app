@@ -241,6 +241,28 @@ def search(s, me, query, chat_id=None, limit=SEARCH_LIMIT):
     return s.execute(statement).all()
 
 
+def search_chat(s, conversation, membership, query, sender_id=None, before_seq=None, limit=None):
+    """Search ONE chat (its Search in this chat page): messages whose words contain the query,
+    and/or that this person sent, newest first. ([messages], more?). The chat's own rules: the
+    caller loaded it with access.load (members only), the history rule, deleted ones left out.
+    With no words but a person, it lists everything that person said."""
+    limit = limit or SEARCH_LIMIT
+    query = " ".join((query or "").split())
+    if len(query) < 2 and sender_id is None:
+        return [], False
+    statement = select(Message).where(
+        Message.conversation_id == conversation.id, Message.deleted_at.is_(None), Message.kind == "text",
+        Message.body != "", Message.seq > chats.visible_from(conversation, membership))
+    if len(query) >= 2:
+        statement = statement.where(func.lower(Message.body).like(like_pattern(query.lower()), escape="\\"))
+    if sender_id is not None:
+        statement = statement.where(Message.sender_id == sender_id)
+    if before_seq is not None:
+        statement = statement.where(Message.seq < before_seq)
+    found = s.scalars(statement.order_by(Message.seq.desc()).limit(limit + 1)).all()
+    return found[:limit], len(found) > limit
+
+
 def snippet(body, query, width=70):
     """The words around the first match, with the match marked (escaped, safe HTML)."""
     lowered, needle = body.lower(), " ".join(query.split()).lower()

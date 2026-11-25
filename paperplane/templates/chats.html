@@ -27,6 +27,7 @@
           {% else %}{{ members|length }} members: {% for m in members %}{{ 'you' if m.user_id == g.user.id else m.user.first_name }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}
         </p>
       </div>
+      <a class="icon-button" href="{{ url_for('search.in_chat', chat_id=conversation.id) }}" title="Search in this chat">{{ icon('search', 20) }}<span class="visually-hidden">Search in this chat</span></a>
       <details class="mute-menu" data-popover>
         <summary class="icon-button" title="{{ 'Muted' if chat_is_muted(membership) else 'Mute notifications' }}">{{ icon('bell-off' if chat_is_muted(membership) else 'bell', 20) }}<span class="visually-hidden">Notifications for this chat</span></summary>
         <div class="member-menu-items">
@@ -51,6 +52,14 @@
       {% endif %}
     </header>
 
+    {% if find_query %}
+      <div class="find-bar" data-find-bar>
+        {{ icon('search', 16) }}
+        <span>Found "<strong data-find-words>{{ find_query }}</strong>"</span>
+        <a href="{{ url_for('search.in_chat', chat_id=conversation.id, q=find_query) }}">Back to results</a>
+        <a class="icon-button icon-button-small" href="{{ url_for('chats.show', chat_id=conversation.id) }}" title="Close the search">{{ icon('x', 16) }}<span class="visually-hidden">Close the search</span></a>
+      </div>
+    {% endif %}
     <div class="messages-scroll" data-scroll>
       <ol class="messages" data-messages aria-live="polite" aria-relevant="additions">
         {% if more %}
