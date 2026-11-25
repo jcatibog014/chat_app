@@ -29,6 +29,7 @@ Want to see two real people chat? Click your picture (at the bottom of the menu,
 | Photos, Files and Links | Every chat keeps a history of the pictures, files and links sent in it, newest first, one tab each. |
 | Find | Search the words in all your chats, or in one chat (and choose who said them). |
 | Mentions | Write @name in a group. That person gets a red @ and a notification. |
+| Notifications | One page for what concerns you: mentions, replies and reactions to your messages, new stories, reactions and replies to yours, and being added to a group or made an admin. |
 | Notifications | Notifications on your computer and phone. Mute a chat to make it quiet. |
 | Colours | Pink (like the logo) is the default. You can choose purple, red or blue, and light or dark. |
 | Settings | Settings has pages: Account, Appearance, Notifications, Privacy and Devices. |
@@ -95,6 +96,14 @@ Each time you post, you choose who can see it: **everyone you chat with**, or on
 
 Only people you chat with can see your stories, and someone you block can't see them at all. Only you can see who saw your story. If you don't want to see someone's stories, open one and choose **More**, then **Mute**. They aren't told.
 
+### Notifications
+
+**Notifications** in the menu (and in the bar at the bottom of a phone) shows what concerns you, newest first: who mentioned you, replied to or reacted to your message, posted a story, reacted or replied to your story, added you to a group, or made you an admin. The number beside it changes live, and opening the page reads them. Click one to go where it happened.
+
+![The Notifications page](docs/screenshots/notifications.png)
+
+Nothing about yourself shows, and nothing from someone you blocked. If a message is deleted, its notifications go too.
+
 ### Search in a Chat
 
 The magnifying glass at the top of a chat searches only that chat. Results show as you type, newest first. Choose a person to see only what they said (or, with no words, everything they said). Click a result: the chat opens at that message, with your words marked, and **Back to results** takes you back.
@@ -147,15 +156,15 @@ Send a friend a link. They play Ben, and the made-up Ben steps aside.
 
 ![Dark mode](docs/screenshots/dark-chat.png)
 
-On a phone there is no menu at the top. The bar at the bottom has **Chats**, **Stories** and **Profile**. Inside a chat the bar steps aside, and the arrow takes you back.
+On a phone there is no menu at the top. The bar at the bottom has **Chats**, **Stories**, **Notifications** and **Profile**. Inside a chat the bar steps aside, and the arrow takes you back.
 
 | Chats on a phone | Profile on a phone | A chat on a phone |
 | --- | --- | --- |
 | ![The chat list on a phone](docs/screenshots/phone-chats.png) | ![The profile menu on a phone](docs/screenshots/phone-profile.png) | ![A chat on a phone](docs/screenshots/phone-chat.png) |
 
-| Stories on a phone | A story on a phone |
-| --- | --- |
-| ![The Stories page on a phone](docs/screenshots/phone-stories.png) | ![Carlo's Close Friends story on a phone](docs/screenshots/phone-story.png) |
+| Stories on a phone | A story on a phone | Notifications on a phone |
+| --- | --- | --- |
+| ![The Stories page on a phone](docs/screenshots/phone-stories.png) | ![Carlo's Close Friends story on a phone](docs/screenshots/phone-story.png) | ![The Notifications page on a phone](docs/screenshots/phone-notifications.png) |
 
 ## How It Works
 

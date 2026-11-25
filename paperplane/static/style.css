@@ -291,7 +291,7 @@ html:not(.js) .js-only { display: none !important; }
   .sidebar { display: none; }
   :root { --bottom-nav: calc(3.7rem + env(safe-area-inset-bottom, 0px)); }
   .main-column { padding-bottom: var(--bottom-nav); }
-  .bottom-nav { position: fixed; z-index: 35; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr);
+  .bottom-nav { position: fixed; z-index: 35; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr);
     height: var(--bottom-nav); padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--surface); border-top: 1px solid var(--rule); box-shadow: 0 -4px 16px rgb(19 38 59 / .06); }
   .bottom-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; height: 100%;
@@ -762,6 +762,27 @@ details.fold[open] { flex: 1 1 100%; }
 .result-body { color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
 .result-who { color: var(--ink); font-weight: 600; }
 .result-body mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); border-radius: 3px; padding: 0 .1rem; }
+
+/* ---------- Notifications (activity.py): who did what that concerns you ---------- */
+.activity-section + .activity-section { margin-top: 1.6rem; }
+.activity-section h2 { margin-bottom: .7rem; font-size: 1.1rem; }
+.activity-list { list-style: none; margin: 0; padding: 0; overflow: hidden; max-width: 52rem; }
+.activity + .activity { border-top: 1px solid var(--rule); }
+.activity-row { display: flex; align-items: flex-start; gap: .85rem; padding: .85rem 1rem; color: var(--ink); text-decoration: none; }
+a.activity-row:hover { background: var(--row-hover); color: var(--ink); }
+.activity.is-new { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.activity-who { position: relative; flex: 0 0 auto; }
+.activity-kind { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 1.35rem; height: 1.35rem;
+  border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .72rem; line-height: 1; box-shadow: 0 0 0 2px var(--surface); }
+.activity-kind.has-emoji { background: var(--surface); font-size: .8rem; }
+.activity-group { background: var(--link); }
+.activity-text { flex: 1 1 auto; min-width: 0; display: grid; gap: .15rem; line-height: 1.4; }
+.activity-words { overflow-wrap: anywhere; }
+.activity-snippet { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
+.activity-text time { color: var(--muted); font-size: .8rem; }
+.activity.is-new .activity-text time { color: var(--link); font-weight: 600; }
+.activity-dot { flex: 0 0 auto; width: .6rem; height: .6rem; margin-top: .45rem; border-radius: 50%; background: var(--accent); }
+.activity-refresh { margin-bottom: 1rem; }
 
 /* ---------- Photos, Files and Links (a chat's history; chat info and its own page) ---------- */
 .media-strip { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; gap: .4rem; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); }

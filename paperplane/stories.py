@@ -207,6 +207,11 @@ def react(s, viewer, story_id, emoji, now):
         s.add(StoryReaction(story_id=story.id, user_id=viewer.id, emoji=emoji, created_at=now))
         now_on = emoji
     s.flush()
+    # The owner's Notifications page: one line per person and story, with the emoji now on it.
+    from . import activity
+    activity.take_back(s, story.user_id, "story_reaction", viewer.id, story_id=story.id)
+    if now_on:
+        activity.add(s, story.user_id, "story_reaction", viewer, now, story_id=story.id, emoji=now_on)
     outbox.emit(s, {story.user_id}, "story.reacted", {"story_id": story.id, "user_id": viewer.id,
                                                        "name": viewer.first_name, "emoji": now_on})
     return now_on

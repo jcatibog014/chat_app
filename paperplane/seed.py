@@ -313,6 +313,50 @@ def sample_media(s, team, people, moment):
 
 fillers.append(sample_media)
 
+
+# ---------- Notifications: a few days of things that concern Mika ----------
+
+def sample_activity(s, team, people, moment):
+    """Mika's Notifications page: new ones (stories, a reaction and a reply to her story; the
+    @mention is made by notify.record_mentions itself) and earlier, read ones."""
+    from .models import Activity, Conversation, Message, Story
+    ana, ben, carlo, mika = (people[handle] for handle in ("ana", "ben", "carlo", "mika"))
+    chat = {c.title: c for c in s.scalars(select(Conversation).where(
+        Conversation.demo_team_id == team.id, Conversation.kind == "group"))}
+
+    def said(title, body):
+        return s.scalar(select(Message).where(Message.conversation_id == chat[title].id, Message.body == body))
+
+    def line(actor, kind, when, read=True, **where):
+        s.add(Activity(user_id=mika.id, actor_id=actor.id, kind=kind, created_at=when,
+                       read_at=moment if read else None, **where))
+
+    # Earlier (read): added to the groups, a reaction, a reply.
+    line(ana, "group_added", ago(moment, days=30), conversation_id=chat["Papel Studio"].id)
+    line(ben, "group_added", ago(moment, days=6), conversation_id=chat["Weekend Hike"].id)
+    count_me_in = said("Weekend Hike", "Count me in too.")
+    line(ben, "reaction", ago(moment, days=1, hours=7), conversation_id=chat["Weekend Hike"].id,
+         message_id=count_me_in.id, emoji="👍")
+    plan = said("Launch Plans", "Let's list everything we need for the website launch.")
+    answer = said("Launch Plans", "Domain, hosting, and the photo shoot.")
+    answer.reply_to_id = plan.id
+    line(carlo, "reply", answer.created_at, conversation_id=chat["Launch Plans"].id, message_id=answer.id)
+
+    # New: Ana's and Carlo's stories, and Ben's heart and Carlo's reply on Mika's own.
+    story_of = {story.user_id: story for story in s.scalars(select(Story).where(
+        Story.user_id.in_([ana.id, carlo.id, mika.id])))}
+    line(ana, "story_new", story_of[ana.id].created_at, read=False, story_id=story_of[ana.id].id)
+    line(carlo, "story_new", story_of[carlo.id].created_at, read=False, story_id=story_of[carlo.id].id)
+    mine = story_of[mika.id]
+    line(ben, "story_reaction", ago(moment, minutes=149), read=False, story_id=mine.id, emoji="❤️")
+    reply = s.scalar(select(Message).where(Message.story_id == mine.id))
+    line(carlo, "story_reply", reply.created_at, read=False, conversation_id=reply.conversation_id,
+         message_id=reply.id, story_id=mine.id)
+    s.flush()
+
+
+fillers.append(sample_activity)
+
 PALETTE_NOTES = """Kalye Coffee palette (Carlo)
 
 Harbour blue  #1D4E6B  cups, signs

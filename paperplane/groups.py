@@ -113,8 +113,11 @@ def add_people(s, me, chat_id, people, moment):
     for person in added:
         join_as_member(s, conversation, person, moment)
     if added:
+        from . import activity
         chats.post_system(s, conversation, f"{me.first_name} added {names(added)}", moment)
         chats.announce_new_chat(s, conversation, {person.id for person in added})
+        for person in added:
+            activity.add(s, person.id, "group_added", me, moment, conversation_id=conversation.id)
     return added
 
 
@@ -144,6 +147,8 @@ def remove_person(s, me, chat_id, user_id, moment):
     s.flush()
     removed = s.get(User, user_id)
     chats.post_system(s, conversation, f"{me.first_name} removed {removed.first_name}", moment)
+    from . import activity
+    activity.add(s, user_id, "group_removed", me, moment, conversation_id=conversation.id)
     # Their tabs drop the chat at once; from now on no event of this chat reaches them.
     outbox.emit(s, {user_id}, "conversation.removed", {"conversation_id": conversation.id, "why": "removed"})
 
@@ -161,6 +166,9 @@ def set_role(s, me, chat_id, user_id, role, moment):
     words = f"made {person.first_name} an admin" if role == access.ADMIN else f"made {person.first_name} a member"
     chats.post_system(s, conversation, f"{me.first_name} {words}", moment)
     tell_member(s, user_id, conversation)
+    if role == access.ADMIN:
+        from . import activity
+        activity.add(s, user_id, "group_admin", me, moment, conversation_id=conversation.id)
 
 
 def hand_over(s, me, chat_id, user_id, moment):
@@ -175,6 +183,8 @@ def hand_over(s, me, chat_id, user_id, moment):
     person = s.get(User, user_id)
     chats.post_system(s, conversation, f"{me.first_name} made {person.first_name} the owner", moment)
     tell_member(s, user_id, conversation)
+    from . import activity
+    activity.add(s, user_id, "group_owner", me, moment, conversation_id=conversation.id)
     tell_member(s, me.id, conversation)
 
 

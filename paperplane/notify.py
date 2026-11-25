@@ -97,6 +97,11 @@ def record_mentions(s, conversation, message, moment):
             s.add(Mention(message_id=message.id, user_id=person.id, conversation_id=conversation.id, seq=message.seq))
             found.add(person.id)
     s.flush()
+    if found and message.sender is not None:
+        from . import activity
+        for user_id in found:
+            activity.add(s, user_id, "mention", message.sender, message.created_at,
+                         conversation_id=conversation.id, message_id=message.id)
     return found
 
 

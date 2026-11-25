@@ -116,7 +116,7 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import auth, blocks, crew, db, formatting, groups, live, notify, presence, previews, seed, stories
+    from . import activity, auth, blocks, crew, db, formatting, groups, live, notify, presence, previews, seed, stories
     from .views import chats as chat_views
     from .views import demo, settings
     from .views import messages as message_views
@@ -124,6 +124,7 @@ def create_app(test_config=None):
     from .views import files as file_views
     from .views import notify as notify_views
     from .views import stories as story_views
+    from .views import activity as activity_views
 
     db.init_app(app)
     auth.init_app(app)
@@ -141,8 +142,10 @@ def create_app(test_config=None):
     notify_views.init_app(app)
     stories.init_app(app)
     story_views.init_app(app)
+    activity.init_app(app)
+    activity_views.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
-    for blueprint in (auth.bp, chat_views.bp, message_views.bp, group_views.bp, file_views.bp, notify_views.bp, story_views.bp, settings.bp, demo.bp):
+    for blueprint in (auth.bp, chat_views.bp, message_views.bp, group_views.bp, file_views.bp, notify_views.bp, story_views.bp, activity_views.bp, settings.bp, demo.bp):
         app.register_blueprint(blueprint)
     # After the blueprints: the WebSocket handshake check needs auth.load_user to have run first.
     live.init_app(app)
